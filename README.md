@@ -1,0 +1,142 @@
+# Activity App Server
+
+This is the backend server for the Activity App, a platform for users to discover, join, and interact with activities and groups. The server is built using Node.js, Express, and PostgreSQL.
+
+## Features
+
+- **Activity Management**: Fetch activities with details and associated images.
+- **Group Chats**: Manage group chats for activities and direct user-to-user chats.
+- **User Management**: Handle user profiles and interactions.
+- **Database Integration**: PostgreSQL database with schema and sample data provided.
+
+## Project Structure
+
+```
+.
+├── .env                  # Environment variables
+├── .env.example          # Example environment variables
+├── db.ts                 # Database connection setup
+├── index.js              # Main server entry point
+├── package.json          # Project dependencies and scripts
+├── populate_sample_data.SQL # SQL script to populate sample data
+├── schema.SQL            # Database schema definition
+├── public/               # Static files (images)
+├── queries/              # Database query logic
+├── routes/               # API route handlers
+└── .gitignore            # Git ignore file
+```
+
+## Prerequisites
+
+- **Node.js**: Ensure you have Node.js installed.
+- **PostgreSQL**: A PostgreSQL database instance is required.
+
+## Installation
+
+1. Clone the repository:
+
+   ```
+   git clone <repository-url>
+   cd activity-app-server
+   ```
+
+2. Install dependencies:
+
+   ```
+   npm install
+   ```
+
+3. Set up the environment variables:
+
+   - Copy `.env.example` to `.env`:
+
+     ```
+     cp .env.example .env
+     ```
+
+   - Update the `.env` file with your configuration.
+
+4. Set up the database:
+
+   - Create the database schema:
+
+     ```
+     psql -U postgres -d <your_database_name> -f schema.SQL
+     ```
+
+   - Populate the database with sample data:
+
+     ```
+     psql -U postgres -d <your_database_name> -f populate_sample_data.SQL
+     ```
+
+## Usage
+
+1. Start the server:
+
+   ```
+   npm start
+   ```
+
+2. The server will run at the URL specified in your `.env` file (default: `http://localhost:5000`).
+
+3. Access the following API endpoints:
+
+   - **Activities**: `GET /activities`
+   - **Groups**: `GET /groups?user_id=<user_id>`
+   - **Activity Group**: `GET /activityGroup/:activity_id?user_id=<user_id>`
+   - **Chat Messages**: `GET /chat/:chat_id`
+
+## Environment Variables
+
+The following environment variables are required:
+
+- `PORT`: The port the server will run on.
+- `BASE_URL`: The base URL for the server.
+- `IMAGE_PATH`: The path to serve static images.
+
+Example `.env` file:
+
+```
+PORT=5000
+BASE_URL=http://localhost:5000
+IMAGE_PATH=http://localhost:5000/public/images
+```
+
+## Database Schema
+
+The database schema is defined in `schema.SQL`. It includes tables for users, activities, swipes, chats, and messages.
+
+## Sample Data
+
+Sample data is provided in `populate_sample_data.SQL` to help you get started quickly.
+
+## API Endpoints
+
+### Activities
+
+- **GET /activities**: Fetch all activities with details and images.
+
+### Groups
+
+- **GET /groups?user_id=<user_id>**: Fetch matched activities for a specific user.
+
+### Activity Group
+
+- **GET /activityGroup/:activity_id?user_id=<user_id>**: Fetch group details for a specific activity.
+
+### Chat
+
+- **GET /chat/:chat_id**: Fetch all messages for a specific chat.
+
+## Static Files
+
+Static images are served from the `public` directory. Access them via the `IMAGE_PATH` defined in your `.env` file.
+
+## Contributing
+
+Contributions are welcome! Please fork the repository and submit a pull request.
+
+## License
+
+This project is licensed under the ISC License. See the LICENSE file for details.
