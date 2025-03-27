@@ -5,68 +5,68 @@ chat,
 swipe,
 activity_image,
 activity,
+activity_member,
 "user" CASCADE;
--- 1️⃣ User Table
-CREATE TABLE "user" (
-    id SERIAL PRIMARY KEY,
-    first_name TEXT NOT NULL,
-    last_name TEXT NOT NULL,
-    email TEXT UNIQUE NOT NULL,
-    password TEXT NOT NULL,
-    profile_image TEXT DEFAULT NULL
-);
--- 2️⃣ Activity Table
 CREATE TABLE activity (
-    id SERIAL PRIMARY KEY,
-    name TEXT NOT NULL,
-    description TEXT,
-    location TEXT DEFAULT NULL,
-    has_cost BOOLEAN NOT NULL DEFAULT FALSE,
-    cost DECIMAL(10, 2) DEFAULT NULL,
-    available_sun BOOLEAN DEFAULT FALSE,
-    available_mon BOOLEAN DEFAULT FALSE,
-    available_tue BOOLEAN DEFAULT FALSE,
-    available_wed BOOLEAN DEFAULT FALSE,
-    available_thu BOOLEAN DEFAULT FALSE,
-    available_fri BOOLEAN DEFAULT FALSE,
-    available_sat BOOLEAN DEFAULT FALSE,
-    url TEXT DEFAULT NULL
+    id integer NOT NULL,
+    name text NOT NULL,
+    location text,
+    has_cost boolean DEFAULT false NOT NULL,
+    cost numeric(10, 2),
+    available_sun boolean DEFAULT false,
+    available_mon boolean DEFAULT false,
+    available_tue boolean DEFAULT false,
+    available_wed boolean DEFAULT false,
+    available_thu boolean DEFAULT false,
+    available_fri boolean DEFAULT false,
+    available_sat boolean DEFAULT false,
+    url text,
+    description text
 );
--- 3️⃣ Activity Image Table (Stores Multiple Images for Each Activity)
 CREATE TABLE activity_image (
-    id SERIAL PRIMARY KEY,
-    activity_id INT REFERENCES activity(id) ON DELETE CASCADE,
-    image_url TEXT NOT NULL
+    id integer NOT NULL,
+    activity_id integer,
+    image_url text NOT NULL
 );
--- 4️⃣ Swipe Table (Tracks Likes/Dislikes)
-CREATE TABLE swipe (
-    id SERIAL PRIMARY KEY,
-    user_id INT REFERENCES "user"(id) ON DELETE CASCADE,
-    activity_id INT REFERENCES activity(id) ON DELETE CASCADE,
-    liked BOOLEAN NOT NULL,
-    -- TRUE for like, FALSE for dislike
-    swiped_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+CREATE TABLE activity_member (
+    id integer NOT NULL,
+    activity_id integer,
+    user_id integer,
+    joined_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
 );
--- 5️⃣ Chat Table (Stores All Chats - Both Direct and Activity Chats)
 CREATE TABLE chat (
-    id SERIAL PRIMARY KEY,
-    chat_type TEXT CHECK (chat_type IN ('activity', 'direct')) NOT NULL,
-    activity_id INT REFERENCES activity(id) ON DELETE CASCADE,
-    -- NULL for direct chats
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    id integer NOT NULL,
+    chat_type text NOT NULL,
+    activity_id integer,
+    created_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    CHECK (chat_type IN ('activity', 'direct'))
 );
--- 6️⃣ Chat Member Table (Tracks Users in Each Chat)
 CREATE TABLE chat_member (
-    id SERIAL PRIMARY KEY,
-    chat_id INT REFERENCES chat(id) ON DELETE CASCADE,
-    user_id INT REFERENCES "user"(id) ON DELETE CASCADE,
-    joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    id integer NOT NULL,
+    chat_id integer,
+    user_id integer,
+    joined_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    left_at timestamp without time zone
 );
--- 7️⃣ Message Table (Stores Messages for Any Chat)
 CREATE TABLE message (
-    id SERIAL PRIMARY KEY,
-    chat_id INT REFERENCES chat(id) ON DELETE CASCADE,
-    user_id INT REFERENCES "user"(id) ON DELETE CASCADE,
-    content TEXT NOT NULL,
-    sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    id integer NOT NULL,
+    user_id integer,
+    content text NOT NULL,
+    sent_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+    chat_id integer
+);
+CREATE TABLE swipe (
+    id integer NOT NULL,
+    user_id integer,
+    activity_id integer,
+    liked boolean NOT NULL,
+    swiped_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TABLE "user" (
+    id integer NOT NULL,
+    email text NOT NULL,
+    password text NOT NULL,
+    profile_image text,
+    first_name text DEFAULT '' NOT NULL,
+    last_name text DEFAULT '' NOT NULL
 );
