@@ -1,3 +1,6 @@
+// Use the .env file to set environment variables
+require("dotenv").config();
+
 const express = require("express");
 const cors = require("cors");
 
@@ -25,4 +28,9 @@ app.use("/chat", chatRoutes);
 
 app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
+  console.log(
+    `🔌 Connected to ${
+      process.env.NODE_ENV === "production" ? "Render DB" : "Local DB"
+    }`
+  );
 });
