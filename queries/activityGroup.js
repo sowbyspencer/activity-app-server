@@ -65,7 +65,12 @@ LEFT JOIN direct_chats dc ON dc.user_id = u.id
 WHERE s.activity_id = $1
   AND s.liked = TRUE
   AND u.id != $2
-GROUP BY a.id, gc.chat_id, gcm.lastMessage;
+GROUP BY 
+  a.id, 
+  a.name,
+  gc.chat_id, 
+  gcm.lastMessage;
+
 `,
       [activity_id, user_id]
     );
