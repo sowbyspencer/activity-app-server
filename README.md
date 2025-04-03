@@ -94,6 +94,7 @@ The following environment variables are required:
 - `PORT`: The port the server will run on.
 - `BASE_URL`: The base URL for the server.
 - `IMAGE_PATH`: The path to serve static images.
+- `JWT_SECRET`: The secret key for signing JSON Web Tokens.
 
 Example `.env` file:
 
@@ -101,6 +102,7 @@ Example `.env` file:
 PORT=5000
 BASE_URL=http://localhost:5000
 IMAGE_PATH=http://localhost:5000/public/images
+JWT_SECRET=your_jwt_secret_key
 ```
 
 ## Database Schema
@@ -129,6 +131,28 @@ Sample data is provided in `populate_sample_data.SQL` to help you get started qu
 
 - **GET /chat/:chat_id**: Fetch all messages for a specific chat.
 
+### User Authentication
+
+- **POST /register**: Register a new user.  
+  **Request Body**:
+
+  ```json
+  {
+    "username": "string",
+    "password": "string",
+    "email": "string"
+  }
+  ```
+
+- **POST /login**: Authenticate a user and return a JWT.  
+  **Request Body**:
+  ```json
+  {
+    "username": "string",
+    "password": "string"
+  }
+  ```
+
 ## Static Files
 
 Static images are served from the `public` directory. Access them via the `IMAGE_PATH` defined in your `.env` file.
@@ -138,5 +162,3 @@ Static images are served from the `public` directory. Access them via the `IMAGE
 Contributions are welcome! Please fork the repository and submit a pull request.
 
 ## License
-
-This project is licensed under the ISC License. See the LICENSE file for details.

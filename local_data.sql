@@ -32,23 +32,6 @@ VALUES (
         'https://www.nps.gov/grte/index.htm',
         'Explore the stunning trails of the Grand Teton National Park. A perfect adventure for hikers of all skill levels!'
     );
-INSERT INTO activity
-VALUES (
-        3,
-        'filler',
-        NULL,
-        false,
-        NULL,
-        false,
-        true,
-        true,
-        true,
-        true,
-        true,
-        true,
-        'https://Youtube.com',
-        NULL
-    );
 INSERT INTO activity_image
 VALUES (
         1,

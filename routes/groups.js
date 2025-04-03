@@ -3,6 +3,8 @@ const router = express.Router();
 const { getMatchedActivities } = require("../queries/groups");
 
 // Route to get matched activities for a user
+// Test URL: http://10.244.131.46:5000/groups?user_id=<user_id>
+// http://10.244.131.46:5000/groups?user_id=1
 router.get("/", async (req, res) => {
   const user_id = req.query.user_id; // Extract user_id from request query
 

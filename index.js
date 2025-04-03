@@ -8,7 +8,7 @@ const cors = require("cors");
 const activitiesRoutes = require("./routes/activities");
 const groupsRoutes = require("./routes/groups");
 const activityGroupRoutes = require("./routes/activityGroup");
-// const usersRoutes = require("./routes/users");
+const usersRoutes = require("./routes/users");
 const chatRoutes = require("./routes/chat");
 
 const app = express();
@@ -23,7 +23,7 @@ app.use("/public", express.static("public"));
 app.use("/activities", activitiesRoutes);
 app.use("/groups", groupsRoutes);
 app.use("/activityGroup", activityGroupRoutes);
-// app.use("/users", usersRoutes);
+app.use("/users", usersRoutes);
 app.use("/chat", chatRoutes);
 
 app.listen(PORT, () => {
