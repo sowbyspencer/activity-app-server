@@ -17,10 +17,7 @@ const PORT = 5000;
 // Middleware
 app.use(
   cors({
-    origin: [
-      "http://localhost:8081",
-      "http://activity-app-server.onrender.com",
-    ], // Allow multiple origins
+    origin: true, // Allow all origins
     methods: "GET,POST,PUT,DELETE", // Specify allowed HTTP methods
     credentials: true, // Allow cookies if needed
   })
