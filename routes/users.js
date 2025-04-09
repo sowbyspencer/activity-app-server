@@ -1,6 +1,7 @@
 const express = require("express");
 const multer = require("multer");
 const path = require("path");
+const fs = require("fs");
 const { getUserProfile } = require("../queries/users");
 const pool = require("../db.ts");
 
@@ -41,7 +42,43 @@ router.put("/:id", upload.single("profileImage"), async (req, res) => {
     ? `${process.env.IMAGE_PATH}/users/${req.file.filename}`
     : null;
 
+  console.log("Received update request:", {
+    id,
+    firstName,
+    lastName,
+    email,
+    profileImage,
+  });
+
   try {
+    const currentProfile = await pool.query(
+      `SELECT profile_image FROM "user" WHERE id = $1`,
+      [id]
+    );
+
+    if (currentProfile.rows.length === 0) {
+      console.error("User not found:", id);
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const oldImagePath = currentProfile.rows[0].profile_image;
+
+    if (
+      profileImage &&
+      oldImagePath &&
+      oldImagePath.startsWith(process.env.IMAGE_PATH)
+    ) {
+      const localPath = path.join(
+        __dirname,
+        "../public/images/users",
+        path.basename(oldImagePath)
+      );
+      fs.unlink(localPath, (err) => {
+        if (err)
+          console.error("Error deleting old profile image:", err.message);
+      });
+    }
+
     const query = `
       UPDATE "user"
       SET first_name = $1, last_name = $2, email = $3, profile_image = COALESCE($4, profile_image)
@@ -52,9 +89,11 @@ router.put("/:id", upload.single("profileImage"), async (req, res) => {
     const result = await pool.query(query, values);
 
     if (result.rows.length === 0) {
+      console.error("Failed to update user profile:", id);
       return res.status(404).json({ error: "User not found" });
     }
 
+    console.log("User profile updated successfully:", result.rows[0]);
     res.json(result.rows[0]);
   } catch (err) {
     console.error("Error updating user profile:", err.message);
