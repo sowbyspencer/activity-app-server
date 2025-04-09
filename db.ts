@@ -1,11 +1,11 @@
 const { Pool } = require("pg");
 
-const isHostedDB = !process.env.DB_ENV || process.env.DB_ENV === "hosted"; // Default to hosted DB
+const isProduction = process.env.NODE_ENV === "production";
 
 let pool;
 
-if (isHostedDB && process.env.DATABASE_URL) {
-    // ✅ Hosted (Production) config
+if (isProduction && process.env.DATABASE_URL) {
+    // ✅ Render (Production) config
     pool = new Pool({
         connectionString: process.env.DATABASE_URL,
         ssl: { rejectUnauthorized: false },
