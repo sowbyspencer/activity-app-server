@@ -30,7 +30,7 @@ app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
   console.log(
     `🔌 Connected to ${
-      process.env.NODE_ENV === "production" ? "Render DB" : "Local DB"
+      process.env.DB_ENV === "hosted" ? "Hosted DB" : "Local DB"
     }`
   );
 });
