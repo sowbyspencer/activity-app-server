@@ -10,6 +10,7 @@ const groupsRoutes = require("./routes/groups");
 const activityGroupRoutes = require("./routes/activityGroup");
 const usersRoutes = require("./routes/users");
 const chatRoutes = require("./routes/chat");
+const authRoutes = require("./routes/auth");
 
 const app = express();
 const PORT = 5000;
@@ -31,6 +32,7 @@ app.use("/groups", groupsRoutes);
 app.use("/activityGroup", activityGroupRoutes);
 app.use("/users", usersRoutes);
 app.use("/chat", chatRoutes);
+app.use("/auth", authRoutes);
 
 app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);

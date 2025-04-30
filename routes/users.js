@@ -22,15 +22,21 @@ const upload = multer({ storage });
 // Test URL: http://10.244.131.46:5000/users/:id (replace :id with the user ID)
 router.get("/:id", async (req, res) => {
   const { id } = req.params;
+  console.log("[USERS] Fetching user profile for id:", id);
+
   try {
     const userProfile = await getUserProfile(id);
     if (!userProfile) {
-      return res.status(404).json({ error: "User not found" });
+      console.warn("[USERS] User not found for id:", id);
+      return res.status(404).json({ error: "User not found." });
     }
+    console.log("[USERS] Successfully fetched user profile for id:", id);
     res.json(userProfile);
   } catch (err) {
-    console.error("Error fetching user profile:", err.message);
-    res.status(500).json({ error: "Server error" });
+    console.error("[USERS] Error fetching user profile for id:", err.message);
+    res
+      .status(500)
+      .json({ error: "Failed to fetch user profile. Please try again later." });
   }
 });
 
@@ -42,7 +48,7 @@ router.put("/:id", upload.single("profileImage"), async (req, res) => {
     ? `${process.env.IMAGE_PATH}/users/${req.file.filename}`
     : null;
 
-  console.log("Received update request:", {
+  console.log("[USERS] Received update request:", {
     id,
     firstName,
     lastName,
@@ -93,7 +99,7 @@ router.put("/:id", upload.single("profileImage"), async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    console.log("User profile updated successfully:", result.rows[0]);
+    console.log("[USERS] User profile updated successfully:", result.rows[0]);
     res.json(result.rows[0]);
   } catch (err) {
     console.error("Error updating user profile:", err.message);

@@ -1,5 +1,6 @@
 const pool = require("../db.ts");
 
+// Get activity group details including members and last message
 const getActivityGroup = async (activity_id, user_id) => {
   try {
     const result = await pool.query(
@@ -10,6 +11,15 @@ const getActivityGroup = async (activity_id, user_id) => {
     WHERE c.activity_id = $1
       AND c.chat_type = 'activity'
     LIMIT 1
+),
+-- If no group chat exists, create one dynamically
+gc AS (
+    INSERT INTO chat (chat_type, activity_id)
+    SELECT 'activity', $1
+    WHERE NOT EXISTS (
+      SELECT 1 FROM chat WHERE chat_type = 'activity' AND activity_id = $1
+    )
+    RETURNING id AS chat_id
 ),
 group_chat_message AS (
     SELECT m.content AS lastMessage
@@ -74,6 +84,16 @@ GROUP BY
 `,
       [activity_id, user_id]
     );
+
+    console.log(
+      "group_chat result:",
+      result.rows.map((row) => row.chat_id)
+    ); // Log group_chat results
+    console.log(
+      "direct_chats result:",
+      result.rows.map((row) => row.members)
+    ); // Log direct_chats results
+    console.log("getActivityGroup query result:", result.rows); // Log the query result for debugging
 
     return result.rows.length > 0
       ? result.rows[0]
