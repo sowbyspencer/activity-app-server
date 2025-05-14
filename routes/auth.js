@@ -66,6 +66,7 @@ router.post("/login", async (req, res) => {
       email,
     ]);
     const user = result.rows[0];
+    console.log("[LOGIN] User object from DB:", user); // Log the user object
 
     if (!user) {
       console.warn("[LOGIN] User not found for email:", email);
@@ -87,7 +88,9 @@ router.post("/login", async (req, res) => {
     );
     console.log("[LOGIN] JWT token generated for user:", email);
 
-    res.json({ token, user_id: user.id }); // Include user_id in the response
+    const responseData = { token, user_id: user.id };
+    console.log("[LOGIN] Response data sent to client:", responseData); // Log the response data
+    res.json(responseData); // Include user_id in the response
   } catch (err) {
     console.error("[LOGIN] Error logging in user:", err.message);
     res.status(500).json({ error: "Server error" });
