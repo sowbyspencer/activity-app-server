@@ -16,4 +16,18 @@ const getUserProfile = async (id) => {
   }
 };
 
-module.exports = { getUserProfile };
+// Update user password by ID
+const updateUserPassword = async (id, newHashedPassword) => {
+  try {
+    await pool.query('UPDATE "user" SET password = $1 WHERE id = $2', [
+      newHashedPassword,
+      id,
+    ]);
+    return true;
+  } catch (err) {
+    console.error("Error updating user password:", err.message);
+    throw err;
+  }
+};
+
+module.exports = { getUserProfile, updateUserPassword };

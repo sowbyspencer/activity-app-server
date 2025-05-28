@@ -107,4 +107,43 @@ router.put("/:id", upload.single("profileImage"), async (req, res) => {
   }
 });
 
+// Route to update user password
+router.put("/:id/password", async (req, res) => {
+  const { id } = req.params;
+  const { currentPassword, newPassword } = req.body;
+  if (!currentPassword || !newPassword) {
+    return res
+      .status(400)
+      .json({ error: "Current and new password are required." });
+  }
+  try {
+    // Get the user's hashed password
+    const userResult = await pool.query(
+      'SELECT password FROM "user" WHERE id = $1',
+      [id]
+    );
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: "User not found." });
+    }
+    const hashedPassword = userResult.rows[0].password;
+    // Compare current password
+    const bcrypt = require("bcrypt");
+    const isMatch = await bcrypt.compare(currentPassword, hashedPassword);
+    if (!isMatch) {
+      return res.status(401).json({ error: "Current password is incorrect." });
+    }
+    // Hash new password
+    const newHashedPassword = await bcrypt.hash(newPassword, 10);
+    // Update password in DB
+    await pool.query('UPDATE "user" SET password = $1 WHERE id = $2', [
+      newHashedPassword,
+      id,
+    ]);
+    res.json({ message: "Password updated successfully." });
+  } catch (err) {
+    console.error("[USERS] Error updating password:", err.message);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 module.exports = router;
