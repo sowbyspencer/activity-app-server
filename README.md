@@ -162,3 +162,11 @@ Static images are served from the `public` directory. Access them via the `IMAGE
 Contributions are welcome! Please fork the repository and submit a pull request.
 
 ## License
+
+## Version History
+
+### 2025-05-28
+
+- Added endpoint to delete user accounts with password validation (`POST /users/:id/delete`).
+- Improved user password update logic (`PUT /users/:id/password`).
+- Enhanced error handling for user-related routes.
