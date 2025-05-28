@@ -146,4 +146,39 @@ router.put("/:id/password", async (req, res) => {
   }
 });
 
+// Route to delete user account
+router.post("/:id/delete", async (req, res) => {
+  const { id } = req.params;
+  const { password, validateOnly } = req.body;
+  if (!password) {
+    return res.status(400).json({ error: "Password is required." });
+  }
+  try {
+    // Get the user's hashed password
+    const userResult = await pool.query(
+      'SELECT password FROM "user" WHERE id = $1',
+      [id]
+    );
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: "User not found." });
+    }
+    const hashedPassword = userResult.rows[0].password;
+    const bcrypt = require("bcrypt");
+    const isMatch = await bcrypt.compare(password, hashedPassword);
+    if (!isMatch) {
+      return res.status(401).json({ error: "Password is incorrect." });
+    }
+    if (validateOnly) {
+      return res.json({ message: "Password validated." });
+    }
+    // Delete user and related data (customize as needed)
+    await pool.query('DELETE FROM "user" WHERE id = $1', [id]);
+    // Optionally: delete related data (activities, chats, etc.)
+    res.json({ message: "Account deleted successfully." });
+  } catch (err) {
+    console.error("[USERS] Error deleting account:", err.message);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
 module.exports = router;
