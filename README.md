@@ -170,3 +170,9 @@ Contributions are welcome! Please fork the repository and submit a pull request.
 - Added endpoint to delete user accounts with password validation (`POST /users/:id/delete`).
 - Improved user password update logic (`PUT /users/:id/password`).
 - Enhanced error handling for user-related routes.
+
+### 2025-06-04
+
+- Refactored `queries/activities.js` for improved clarity and maintainability.
+- Added `getUnswipedActivities(userId)` to fetch activities a user has not swiped on, including images and all activity details.
+- Ensured both activity queries return images as arrays using `json_agg`.
