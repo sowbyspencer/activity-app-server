@@ -62,18 +62,17 @@ SELECT
             'id', u.id,
             'name', CONCAT(u.first_name, ' ', u.last_name),
             'profile_image', COALESCE(u.profile_image, ''),
-            'chat_id', COALESCE(dc.chat_id, NULL), -- Ensure we return a chat ID if it exists
+            'chat_id', COALESCE(dc.chat_id, NULL),
             'lastMessage', dc.lastMessage
         )
     ) FILTER (WHERE u.id IS NOT NULL) AS members
-FROM "swipe" s
-JOIN activity a ON s.activity_id = a.id
-JOIN "user" u ON s.user_id = u.id
+FROM activity_member am
+JOIN activity a ON am.activity_id = a.id
+JOIN "user" u ON am.user_id = u.id
 LEFT JOIN group_chat gc ON TRUE
 LEFT JOIN group_chat_message gcm ON TRUE
 LEFT JOIN direct_chats dc ON dc.user_id = u.id
-WHERE s.activity_id = $1
-  AND s.liked = TRUE
+WHERE am.activity_id = $1
   AND u.id != $2
 GROUP BY 
   a.id, 
@@ -95,9 +94,7 @@ GROUP BY
     ); // Log direct_chats results
     console.log("getActivityGroup query result:", result.rows); // Log the query result for debugging
 
-    return result.rows.length > 0
-      ? result.rows[0]
-      : { error: "No group found for this activity." };
+    return result.rows.length > 0 ? result.rows[0] : { error: "No group found for this activity." };
   } catch (err) {
     console.error("Error fetching activity group:", err.message);
     return { error: "Database error while fetching activity group." };
