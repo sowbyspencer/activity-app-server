@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { getUnswipedActivities, recordSwipe } = require("../queries/activities");
+const { getUnswipedActivities, recordSwipe, resetSwipes } = require("../queries/activities");
 
 // Route to get all activities or only unmatched activities for a user
 // Test URL: http://10.244.131.46:5000/activities?user_id=1
@@ -59,6 +59,21 @@ router.post("/swipe", async (req, res) => {
   } catch (err) {
     console.error("[ACTIVITIES] Error recording swipe:", err.message);
     res.status(500).json({ error: "Failed to record swipe. Please try again later." });
+  }
+});
+
+// POST /activities/reset-swipes - Reset declined swipes for a user
+router.post("/reset-swipes", async (req, res) => {
+  const { userId } = req.body;
+  if (!userId) {
+    return res.status(400).json({ error: "Missing userId in request body." });
+  }
+  try {
+    await resetSwipes(userId);
+    res.status(200).json({ message: "Declined activities have been reset." });
+  } catch (err) {
+    console.error("[ACTIVITIES] Error resetting swipes:", err.message);
+    res.status(500).json({ error: "Failed to reset declined activities." });
   }
 });
 

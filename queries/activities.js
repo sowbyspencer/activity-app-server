@@ -92,5 +92,20 @@ const recordSwipe = async (userId, activityId, liked) => {
   return result.rows[0];
 };
 
+// Reset swipes for a user (remove all their swipes except likes that are in activity_member)
+const resetSwipes = async (userId) => {
+  // Remove all swipes for this user EXCEPT those that are liked and have a matching activity_member
+  await pool.query(
+    `
+    DELETE FROM swipe
+    WHERE user_id = $1
+      AND (liked = FALSE OR activity_id NOT IN (
+        SELECT activity_id FROM activity_member WHERE user_id = $1
+      ))
+  `,
+    [userId]
+  );
+};
+
 // Export queries
-module.exports = { getAllActivities, getUnswipedActivities, recordSwipe };
+module.exports = { getAllActivities, getUnswipedActivities, recordSwipe, resetSwipes };
