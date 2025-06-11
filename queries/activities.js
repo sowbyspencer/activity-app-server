@@ -67,5 +67,30 @@ const getUnswipedActivities = async (userId) => {
   return result.rows;
 };
 
+// Record a swipe (like/dislike) for a user on an activity
+const recordSwipe = async (userId, activityId, liked) => {
+  // liked: boolean (true = swipe up/like, false = swipe down/dislike)
+  const result = await pool.query(
+    `INSERT INTO swipe (user_id, activity_id, liked, swiped_at)
+     VALUES ($1, $2, $3, NOW())
+     RETURNING *;`,
+    [userId, activityId, liked]
+  );
+
+  // If liked, add to activity_member if not already present
+  if (liked) {
+    await pool.query(
+      `INSERT INTO activity_member (activity_id, user_id)
+       SELECT $1, $2
+       WHERE NOT EXISTS (
+         SELECT 1 FROM activity_member WHERE activity_id = $1 AND user_id = $2
+       );`,
+      [activityId, userId]
+    );
+  }
+
+  return result.rows[0];
+};
+
 // Export queries
-module.exports = { getAllActivities, getUnswipedActivities };
+module.exports = { getAllActivities, getUnswipedActivities, recordSwipe };

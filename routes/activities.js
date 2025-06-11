@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { getUnswipedActivities } = require("../queries/activities");
+const { getUnswipedActivities, recordSwipe } = require("../queries/activities");
 
 // Route to get all activities or only unmatched activities for a user
 // Test URL: http://10.244.131.46:5000/activities?user_id=1
@@ -44,6 +44,21 @@ router.post("/", async (req, res) => {
   } catch (err) {
     console.error("[ACTIVITIES] Error creating activity:", err.message);
     res.status(500).json({ error: "Failed to create activity. Please try again later." });
+  }
+});
+
+// POST /activities/swipe - Record a swipe action
+router.post("/swipe", async (req, res) => {
+  const { userId, activityId, liked } = req.body;
+  if (!userId || !activityId || typeof liked !== "boolean") {
+    return res.status(400).json({ error: "Missing or invalid userId, activityId, or liked (boolean) in request body." });
+  }
+  try {
+    const swipe = await recordSwipe(userId, activityId, liked);
+    res.status(201).json({ message: "Swipe recorded", swipe });
+  } catch (err) {
+    console.error("[ACTIVITIES] Error recording swipe:", err.message);
+    res.status(500).json({ error: "Failed to record swipe. Please try again later." });
   }
 });
 

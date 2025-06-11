@@ -36,9 +36,5 @@ app.use("/auth", authRoutes);
 
 app.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
-  console.log(
-    `🔌 Connected to ${
-      process.env.DB_ENV === "local" ? "Local DB" : "Production DB"
-    }`
-  );
+  console.log(`🔌 Connected to ${process.env.DB_ENV === "local" ? "Local DB" : "Production DB"}`);
 });
