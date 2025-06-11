@@ -54,8 +54,13 @@ router.post("/swipe", async (req, res) => {
     return res.status(400).json({ error: "Missing or invalid userId, activityId, or liked (boolean) in request body." });
   }
   try {
-    const swipe = await recordSwipe(userId, activityId, liked);
-    res.status(201).json({ message: "Swipe recorded", swipe });
+    const result = await recordSwipe(userId, activityId, liked);
+    res.status(201).json({
+      message: "Swipe recorded",
+      swipe: result.swipe,
+      addedToActivityMember: result.addedToActivityMember,
+      directChats: result.directChats,
+    });
   } catch (err) {
     console.error("[ACTIVITIES] Error recording swipe:", err.message);
     res.status(500).json({ error: "Failed to record swipe. Please try again later." });

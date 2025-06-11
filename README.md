@@ -176,3 +176,11 @@ Contributions are welcome! Please fork the repository and submit a pull request.
 - Refactored `queries/activities.js` for improved clarity and maintainability.
 - Added `getUnswipedActivities(userId)` to fetch activities a user has not swiped on, including images and all activity details.
 - Ensured both activity queries return images as arrays using `json_agg`.
+
+### 2025-06-11
+
+- Implemented POST /activities/swipe endpoint for recording swipes (like/dislike) and updating group membership.
+- Added POST /activities/reset-swipes endpoint to allow users to refresh declined activities.
+- Updated group membership logic to use activity_member table instead of swipe table for all group and activity queries.
+- Improved error handling and documentation for new endpoints.
+- **Updated:** The `/activities/swipe` endpoint now returns a detailed JSON response including the swipe record, whether the user was added to `activity_member`, and a list of direct chats created or found (with user IDs and chat IDs). This provides full transparency of all backend actions performed for each swipe.

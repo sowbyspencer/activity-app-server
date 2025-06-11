@@ -1,4 +1,5 @@
 const pool = require("../db.ts");
+const { getOrCreateDirectChat } = require("./chat");
 
 // Get all activities
 const getAllActivities = async () => {
@@ -77,19 +78,42 @@ const recordSwipe = async (userId, activityId, liked) => {
     [userId, activityId, liked]
   );
 
+  let addedToActivityMember = false;
+  let directChats = [];
+
   // If liked, add to activity_member if not already present
   if (liked) {
-    await pool.query(
+    const activityMemberRes = await pool.query(
       `INSERT INTO activity_member (activity_id, user_id)
        SELECT $1, $2
        WHERE NOT EXISTS (
          SELECT 1 FROM activity_member WHERE activity_id = $1 AND user_id = $2
-       );`,
+       )
+       RETURNING *;`,
       [activityId, userId]
     );
+    addedToActivityMember = activityMemberRes.rows.length > 0;
+
+    // --- NEW LOGIC: Create direct chats with all other members ---
+    // Get all other user IDs in this activity (excluding the new member)
+    const otherMembersRes = await pool.query(`SELECT user_id FROM activity_member WHERE activity_id = $1 AND user_id != $2`, [activityId, userId]);
+    const otherUserIds = otherMembersRes.rows.map((row) => row.user_id);
+    for (const otherUserId of otherUserIds) {
+      // Create or fetch direct chat between userId and otherUserId
+      const chat = await getOrCreateDirectChat(userId, otherUserId);
+      directChats.push({
+        chat_id: chat.id,
+        user_ids: [userId, otherUserId],
+        created: chat.created_at ? true : false,
+      });
+    }
   }
 
-  return result.rows[0];
+  return {
+    swipe: result.rows[0],
+    addedToActivityMember,
+    directChats,
+  };
 };
 
 // Reset swipes for a user (remove all their swipes except likes that are in activity_member)
