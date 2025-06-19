@@ -158,15 +158,19 @@ const leaveActivity = async (userId, activityId) => {
   // Remove from activity_member
   await pool.query(`DELETE FROM activity_member WHERE user_id = $1 AND activity_id = $2`, [userId, activityId]);
 
+  // Reset swipe entries for this user and activity
+  await pool.query(`DELETE FROM swipe WHERE user_id = $1 AND activity_id = $2`, [userId, activityId]);
+
   // Remove from group chat (activity chat)
   const groupChatRes = await pool.query(`SELECT id FROM chat WHERE chat_type = 'activity' AND activity_id = $1`, [activityId]);
   if (groupChatRes.rows.length > 0) {
     const groupChatId = groupChatRes.rows[0].id;
     await pool.query(`DELETE FROM chat_member WHERE chat_id = $1 AND user_id = $2`, [groupChatId, userId]);
+    // Delete messages from this user in the activity chat
+    await pool.query(`DELETE FROM message WHERE chat_id = $1 AND user_id = $2`, [groupChatId, userId]);
   }
 
   // Remove from direct chats if no other shared activities
-  // Find all users who shared this activity with this user
   const otherUsersRes = await pool.query(`SELECT user_id FROM activity_member WHERE activity_id = $1 AND user_id != $2`, [activityId, userId]);
   const otherUserIds = otherUsersRes.rows.map((row) => row.user_id);
   for (const otherUserId of otherUserIds) {
@@ -179,7 +183,6 @@ const leaveActivity = async (userId, activityId) => {
     );
     if (sharedRes.rows.length === 0) {
       // No other shared activities, delete direct chat
-      // Find direct chat
       const chatRes = await pool.query(
         `SELECT c.id FROM chat c
          JOIN chat_member cm1 ON c.id = cm1.chat_id
@@ -193,6 +196,8 @@ const leaveActivity = async (userId, activityId) => {
         await pool.query(`DELETE FROM chat_member WHERE chat_id = $1 AND (user_id = $2 OR user_id = $3)`, [chatId, userId, otherUserId]);
         // Optionally, delete the chat if no members left
         await pool.query(`DELETE FROM chat WHERE id = $1 AND NOT EXISTS (SELECT 1 FROM chat_member WHERE chat_id = $1)`, [chatId]);
+        // Delete messages from both users in this direct chat
+        await pool.query(`DELETE FROM message WHERE chat_id = $1 AND (user_id = $2 OR user_id = $3)`, [chatId, userId, otherUserId]);
       }
     }
   }
