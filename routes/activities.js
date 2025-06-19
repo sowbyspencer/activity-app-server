@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { getUnswipedActivities, recordSwipe, resetSwipes, createActivity } = require("../queries/activities");
+const { getUnswipedActivities, recordSwipe, resetSwipes, createActivity, leaveActivity } = require("../queries/activities");
 
 // Route to get all activities or only unmatched activities for a user
 // Test URL: http://10.244.131.46:5000/activities?user_id=1
@@ -71,6 +71,21 @@ router.post("/reset-swipes", async (req, res) => {
   } catch (err) {
     console.error("[ACTIVITIES] Error resetting swipes:", err.message);
     res.status(500).json({ error: "Failed to reset declined activities." });
+  }
+});
+
+// POST /activities/leave - Leave or unlike an activity
+router.post("/leave", async (req, res) => {
+  const { userId, activityId } = req.body;
+  if (!userId || !activityId) {
+    return res.status(400).json({ error: "Missing userId or activityId in request body." });
+  }
+  try {
+    const result = await leaveActivity(userId, activityId);
+    res.status(200).json({ message: "Left activity successfully.", result });
+  } catch (err) {
+    console.error("[ACTIVITIES] Error leaving activity:", err.message);
+    res.status(500).json({ error: "Failed to leave activity. Please try again later." });
   }
 });
 
