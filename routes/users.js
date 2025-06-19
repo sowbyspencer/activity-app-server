@@ -171,11 +171,25 @@ router.post("/:id/delete", async (req, res) => {
     if (validateOnly) {
       return res.json({ message: "Password validated." });
     }
-    // Delete user and related data (customize as needed)
+    await pool.query('BEGIN');
+    // Find all direct chats the user is a member of
+    const directChatsResult = await pool.query(
+      `SELECT c.id FROM chat c
+       JOIN chat_member cm ON c.id = cm.chat_id
+       WHERE cm.user_id = $1 AND c.chat_type = 'direct'`,
+      [id]
+    );
+    const directChatIds = directChatsResult.rows.map(row => row.id);
+    // Delete the user (cascade will handle related rows)
     await pool.query('DELETE FROM "user" WHERE id = $1', [id]);
-    // Optionally: delete related data (activities, chats, etc.)
-    res.json({ message: "Account deleted successfully." });
+    // Delete all direct chats the user was a member of (cascade will handle chat_member and message)
+    for (const chatId of directChatIds) {
+      await pool.query('DELETE FROM chat WHERE id = $1', [chatId]);
+    }
+    await pool.query('COMMIT');
+    res.json({ message: "Account and related direct chats deleted successfully." });
   } catch (err) {
+    await pool.query('ROLLBACK');
     console.error("[USERS] Error deleting account:", err.message);
     res.status(500).json({ error: "Server error" });
   }
