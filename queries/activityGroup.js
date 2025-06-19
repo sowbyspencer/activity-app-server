@@ -58,14 +58,14 @@ SELECT
     gc.chat_id AS "chat_id",
     gcm.lastMessage AS "lastMessage",
     json_agg(
-        json_build_object(
+        DISTINCT jsonb_build_object(
             'id', u.id,
             'name', CONCAT(u.first_name, ' ', u.last_name),
             'profile_image', COALESCE(u.profile_image, ''),
-            'chat_id', COALESCE(dc.chat_id, NULL),
+            'chat_id', dc.chat_id,
             'lastMessage', dc.lastMessage
         )
-    ) FILTER (WHERE u.id IS NOT NULL) AS members
+    ) FILTER (WHERE u.id IS NOT NULL AND u.id != $2) AS members
 FROM activity_member am
 JOIN activity a ON am.activity_id = a.id
 JOIN "user" u ON am.user_id = u.id
@@ -73,7 +73,7 @@ LEFT JOIN group_chat gc ON TRUE
 LEFT JOIN group_chat_message gcm ON TRUE
 LEFT JOIN direct_chats dc ON dc.user_id = u.id
 WHERE am.activity_id = $1
-  AND u.id != $2
+
 GROUP BY 
   a.id, 
   a.name,
