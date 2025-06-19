@@ -165,22 +165,30 @@ Contributions are welcome! Please fork the repository and submit a pull request.
 
 ## Version History
 
-### 2025-05-28
+### v1.0.7 (2025-06-19)
 
-- Added endpoint to delete user accounts with password validation (`POST /users/:id/delete`).
-- Improved user password update logic (`PUT /users/:id/password`).
-- Enhanced error handling for user-related routes.
+- Added `/activities/leave` endpoint: Users can now leave/unlike an activity, which removes them from the group chat, deletes direct chats if there are no other shared activities, and cleans up all related swipe records and messages.
+- Improved backend cleanup logic for group and chat membership, swipes, and messages when a user leaves an activity.
+- Ensured all data related to a user's participation in an activity is fully removed for privacy and data integrity.
+- Improved user account deletion: Deleting a user now also removes all their related data from the following tables: `swipe` (liked/declined activities), `activity_member` (activity group memberships), `chat_member` (chat memberships), `message` (all sent messages), and all direct/group chats where the user was the only member.
+- Enhanced data integrity and privacy by ensuring no orphaned references remain after user deletion.
 
-### 2025-06-04
-
-- Refactored `queries/activities.js` for improved clarity and maintainability.
-- Added `getUnswipedActivities(userId)` to fetch activities a user has not swiped on, including images and all activity details.
-- Ensured both activity queries return images as arrays using `json_agg`.
-
-### 2025-06-11
+### v1.0.6 (2025-06-11)
 
 - Implemented POST /activities/swipe endpoint for recording swipes (like/dislike) and updating group membership.
 - Added POST /activities/reset-swipes endpoint to allow users to refresh declined activities.
 - Updated group membership logic to use activity_member table instead of swipe table for all group and activity queries.
 - Improved error handling and documentation for new endpoints.
 - **Updated:** The `/activities/swipe` endpoint now returns a detailed JSON response including the swipe record, whether the user was added to `activity_member`, and a list of direct chats created or found (with user IDs and chat IDs). This provides full transparency of all backend actions performed for each swipe.
+
+### v1.0.5 (2025-06-04)
+
+- Refactored `queries/activities.js` for improved clarity and maintainability.
+- Added `getUnswipedActivities(userId)` to fetch activities a user has not swiped on, including images and all activity details.
+- Ensured both activity queries return images as arrays using `json_agg`.
+
+### v1.0.4 (2025-05-28)
+
+- Added endpoint to delete user accounts with password validation (`POST /users/:id/delete`).
+- Improved user password update logic (`PUT /users/:id/password`).
+- Enhanced error handling for user-related routes.
