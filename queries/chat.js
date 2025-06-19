@@ -85,7 +85,40 @@ const getOrCreateChat = async ({ chat_type, activity_id, user_ids }) => {
   }
 };
 
+// Send a message to a chat (group or direct)
+const sendMessageToChat = async (chat_id, user_id, content) => {
+  // Check if chat exists
+  const chatResult = await pool.query(`SELECT * FROM chat WHERE id = $1`, [chat_id]);
+  if (chatResult.rows.length === 0) {
+    return { error: "Chat not found." };
+  }
+  // Check if user is a member of the chat
+  const memberResult = await pool.query(`SELECT * FROM chat_member WHERE chat_id = $1 AND user_id = $2`, [chat_id, user_id]);
+  if (memberResult.rows.length === 0) {
+    return { error: "User is not a member of this chat." };
+  }
+  // Insert the message
+  const insertResult = await pool.query(`INSERT INTO message (chat_id, user_id, content, sent_at) VALUES ($1, $2, $3, NOW()) RETURNING *`, [
+    chat_id,
+    user_id,
+    content,
+  ]);
+  const message = insertResult.rows[0];
+  // Get sender info
+  const userResult = await pool.query(`SELECT first_name, last_name, profile_image FROM "user" WHERE id = $1`, [user_id]);
+  const sender = userResult.rows[0];
+  return {
+    id: message.id,
+    user_id: message.user_id,
+    sender_name: sender ? `${sender.first_name} ${sender.last_name}` : "",
+    profile_image: sender ? sender.profile_image : "",
+    content: message.content,
+    sent_at: message.sent_at,
+  };
+};
+
 module.exports = {
   getChatMessages,
   getOrCreateChat,
+  sendMessageToChat,
 };

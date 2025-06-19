@@ -141,5 +141,7 @@ const resetSwipes = async (userId) => {
   );
 };
 
-// Export queries
-module.exports = { getAllActivities, getUnswipedActivities, recordSwipe, resetSwipes };
+// Create a new activity
+const createActivity = async ({ name, location, has_cost, cost, url, description }) => {
+  await pool.query(
+    `INSERT INTO activity (name, location, has_cost, cost, url, description) VALUES ($1, $2, $3, $4, $5, $6)`,

@@ -19,10 +19,7 @@ const getUserProfile = async (id) => {
 // Update user password by ID
 const updateUserPassword = async (id, newHashedPassword) => {
   try {
-    await pool.query('UPDATE "user" SET password = $1 WHERE id = $2', [
-      newHashedPassword,
-      id,
-    ]);
+    await pool.query('UPDATE "user" SET password = $1 WHERE id = $2', [newHashedPassword, id]);
     return true;
   } catch (err) {
     console.error("Error updating user password:", err.message);
@@ -30,4 +27,59 @@ const updateUserPassword = async (id, newHashedPassword) => {
   }
 };
 
-module.exports = { getUserProfile, updateUserPassword };
+// Update user profile by ID
+const updateUserProfile = async (id, firstName, lastName, email, profileImage) => {
+  const query = `
+    UPDATE "user"
+    SET first_name = $1, last_name = $2, email = $3, profile_image = COALESCE($4, profile_image)
+    WHERE id = $5
+    RETURNING id, first_name AS "firstName", last_name AS "lastName", email, profile_image AS "profileImage";
+  `;
+  const values = [firstName, lastName, email, profileImage, id];
+  const result = await pool.query(query, values);
+  return result.rows[0];
+};
+
+// Get current profile image path
+const getUserProfileImage = async (id) => {
+  const result = await pool.query(`SELECT profile_image FROM "user" WHERE id = $1`, [id]);
+  return result.rows[0]?.profile_image;
+};
+
+// Get user hashed password
+const getUserHashedPassword = async (id) => {
+  const result = await pool.query('SELECT password FROM "user" WHERE id = $1', [id]);
+  return result.rows[0]?.password;
+};
+
+// Delete user by ID
+const deleteUserById = async (id) => {
+  await pool.query('DELETE FROM "user" WHERE id = $1', [id]);
+};
+
+// Get direct chat IDs for user
+const getDirectChatIdsForUser = async (id) => {
+  const result = await pool.query(
+    `SELECT c.id FROM chat c
+     JOIN chat_member cm ON c.id = cm.chat_id
+     WHERE cm.user_id = $1 AND c.chat_type = 'direct'`,
+    [id]
+  );
+  return result.rows.map((row) => row.id);
+};
+
+// Delete chat by ID
+const deleteChatById = async (chatId) => {
+  await pool.query("DELETE FROM chat WHERE id = $1", [chatId]);
+};
+
+module.exports = {
+  getUserProfile,
+  updateUserPassword,
+  updateUserProfile,
+  getUserProfileImage,
+  getUserHashedPassword,
+  deleteUserById,
+  getDirectChatIdsForUser,
+  deleteChatById,
+};

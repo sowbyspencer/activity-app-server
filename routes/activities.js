@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { getUnswipedActivities, recordSwipe, resetSwipes } = require("../queries/activities");
+const { getUnswipedActivities, recordSwipe, resetSwipes, createActivity } = require("../queries/activities");
 
 // Route to get all activities or only unmatched activities for a user
 // Test URL: http://10.244.131.46:5000/activities?user_id=1
@@ -31,16 +31,8 @@ router.post("/", async (req, res) => {
     description,
   });
   try {
-    await pool.query(`INSERT INTO activity (name, location, has_cost, cost, url, description) VALUES ($1, $2, $3, $4, $5, $6)`, [
-      name,
-      location,
-      has_cost,
-      cost,
-      url,
-      description,
-    ]);
-    console.log("[ACTIVITIES] Activity created successfully");
-    res.status(201).json({ message: "Activity created successfully" });
+    const result = await createActivity({ name, location, has_cost, cost, url, description });
+    res.status(201).json(result);
   } catch (err) {
     console.error("[ACTIVITIES] Error creating activity:", err.message);
     res.status(500).json({ error: "Failed to create activity. Please try again later." });

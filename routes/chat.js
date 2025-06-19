@@ -1,7 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { getChatMessages } = require("../queries/chat");
-const pool = require("../db.ts");
+const { getChatMessages, getOrCreateChat, sendMessageToChat } = require("../queries/chat");
 
 // ✅ Get all messages for a chat
 // Test URL: http://10.244.131.46:5000/chat/:chat_id (replace :chat_id with the chat ID)
@@ -33,40 +32,11 @@ router.post("/create", async (req, res) => {
     activity_id,
     user_ids,
   });
-
   try {
-    let chat;
-
-    // Check if a chat already exists
-    if (chat_type === "activity" && activity_id) {
-      const result = await pool.query(`SELECT * FROM chat WHERE chat_type = $1 AND activity_id = $2`, [chat_type, activity_id]);
-      chat = result.rows[0];
-    } else if (chat_type === "direct" && user_ids.length === 2) {
-      const result = await pool.query(
-        `SELECT c.* FROM chat c
-         JOIN chat_member cm1 ON c.id = cm1.chat_id
-         JOIN chat_member cm2 ON c.id = cm2.chat_id
-         WHERE c.chat_type = $1 AND cm1.user_id = $2 AND cm2.user_id = $3`,
-        [chat_type, user_ids[0], user_ids[1]]
-      );
-      chat = result.rows[0];
+    const chat = await getOrCreateChat({ chat_type, activity_id, user_ids });
+    if (chat.error) {
+      return res.status(400).json({ error: chat.error });
     }
-
-    // If no chat exists, create one
-    if (!chat) {
-      const chatResult = await pool.query(`INSERT INTO chat (chat_type, activity_id) VALUES ($1, $2) RETURNING *`, [chat_type, activity_id]);
-      chat = chatResult.rows[0];
-
-      // Add members to the chat
-      for (const user_id of user_ids) {
-        await pool.query(`INSERT INTO chat_member (chat_id, user_id) VALUES ($1, $2)`, [chat.id, user_id]);
-      }
-
-      console.log("[CHAT] New chat created with ID:", chat.id);
-    } else {
-      console.log("[CHAT] Existing chat found with ID:", chat.id);
-    }
-
     res.json(chat);
   } catch (err) {
     console.error("[CHAT] Error creating or fetching chat:", err.message);
@@ -83,34 +53,17 @@ router.post("/:chat_id", async (req, res) => {
     return res.status(400).json({ error: "Missing user_id or content." });
   }
   try {
-    // Check if chat exists
-    const chatResult = await pool.query(`SELECT * FROM chat WHERE id = $1`, [chat_id]);
-    if (chatResult.rows.length === 0) {
-      return res.status(404).json({ error: "Chat not found." });
+    const result = await sendMessageToChat(chat_id, user_id, content);
+    if (result.error) {
+      if (result.error === "Chat not found.") {
+        return res.status(404).json({ error: result.error });
+      }
+      if (result.error === "User is not a member of this chat.") {
+        return res.status(403).json({ error: result.error });
+      }
+      return res.status(400).json({ error: result.error });
     }
-    // Check if user is a member of the chat
-    const memberResult = await pool.query(`SELECT * FROM chat_member WHERE chat_id = $1 AND user_id = $2`, [chat_id, user_id]);
-    if (memberResult.rows.length === 0) {
-      return res.status(403).json({ error: "User is not a member of this chat." });
-    }
-    // Insert the message
-    const insertResult = await pool.query(`INSERT INTO message (chat_id, user_id, content, sent_at) VALUES ($1, $2, $3, NOW()) RETURNING *`, [
-      chat_id,
-      user_id,
-      content,
-    ]);
-    const message = insertResult.rows[0];
-    // Get sender info
-    const userResult = await pool.query(`SELECT first_name, last_name, profile_image FROM "user" WHERE id = $1`, [user_id]);
-    const sender = userResult.rows[0];
-    res.json({
-      id: message.id,
-      user_id: message.user_id,
-      sender_name: sender ? `${sender.first_name} ${sender.last_name}` : "",
-      profile_image: sender ? sender.profile_image : "",
-      content: message.content,
-      sent_at: message.sent_at,
-    });
+    res.json(result);
   } catch (err) {
     console.error("[CHAT] Error sending message:", err.message);
     res.status(500).json({ error: "Failed to send message. Please try again later." });

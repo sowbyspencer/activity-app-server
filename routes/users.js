@@ -2,7 +2,16 @@ const express = require("express");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
-const { getUserProfile } = require("../queries/users");
+const {
+  getUserProfile,
+  updateUserProfile,
+  getUserProfileImage,
+  getUserHashedPassword,
+  updateUserPassword,
+  deleteUserById,
+  getDirectChatIdsForUser,
+  deleteChatById,
+} = require("../queries/users");
 const pool = require("../db.ts");
 
 const router = express.Router();
@@ -34,9 +43,7 @@ router.get("/:id", async (req, res) => {
     res.json(userProfile);
   } catch (err) {
     console.error("[USERS] Error fetching user profile for id:", err.message);
-    res
-      .status(500)
-      .json({ error: "Failed to fetch user profile. Please try again later." });
+    res.status(500).json({ error: "Failed to fetch user profile. Please try again later." });
   }
 });
 
@@ -44,9 +51,7 @@ router.get("/:id", async (req, res) => {
 router.put("/:id", upload.single("profileImage"), async (req, res) => {
   const { id } = req.params;
   const { firstName, lastName, email } = req.body;
-  const profileImage = req.file
-    ? `${process.env.IMAGE_PATH}/users/${req.file.filename}`
-    : null;
+  const profileImage = req.file ? `${process.env.IMAGE_PATH}/users/${req.file.filename}` : null;
 
   console.log("[USERS] Received update request:", {
     id,
@@ -57,50 +62,24 @@ router.put("/:id", upload.single("profileImage"), async (req, res) => {
   });
 
   try {
-    const currentProfile = await pool.query(
-      `SELECT profile_image FROM "user" WHERE id = $1`,
-      [id]
-    );
-
-    if (currentProfile.rows.length === 0) {
+    const oldImagePath = await getUserProfileImage(id);
+    if (!oldImagePath) {
       console.error("User not found:", id);
       return res.status(404).json({ error: "User not found" });
     }
-
-    const oldImagePath = currentProfile.rows[0].profile_image;
-
-    if (
-      profileImage &&
-      oldImagePath &&
-      oldImagePath.startsWith(process.env.IMAGE_PATH)
-    ) {
-      const localPath = path.join(
-        __dirname,
-        "../public/images/users",
-        path.basename(oldImagePath)
-      );
+    if (profileImage && oldImagePath && oldImagePath.startsWith(process.env.IMAGE_PATH)) {
+      const localPath = path.join(__dirname, "../public/images/users", path.basename(oldImagePath));
       fs.unlink(localPath, (err) => {
-        if (err)
-          console.error("Error deleting old profile image:", err.message);
+        if (err) console.error("Error deleting old profile image:", err.message);
       });
     }
-
-    const query = `
-      UPDATE "user"
-      SET first_name = $1, last_name = $2, email = $3, profile_image = COALESCE($4, profile_image)
-      WHERE id = $5
-      RETURNING id, first_name AS "firstName", last_name AS "lastName", email, profile_image AS "profileImage";
-    `;
-    const values = [firstName, lastName, email, profileImage, id];
-    const result = await pool.query(query, values);
-
-    if (result.rows.length === 0) {
+    const updatedProfile = await updateUserProfile(id, firstName, lastName, email, profileImage);
+    if (!updatedProfile) {
       console.error("Failed to update user profile:", id);
       return res.status(404).json({ error: "User not found" });
     }
-
-    console.log("[USERS] User profile updated successfully:", result.rows[0]);
-    res.json(result.rows[0]);
+    console.log("[USERS] User profile updated successfully:", updatedProfile);
+    res.json(updatedProfile);
   } catch (err) {
     console.error("Error updating user profile:", err.message);
     res.status(500).json({ error: "Server error" });
@@ -112,33 +91,20 @@ router.put("/:id/password", async (req, res) => {
   const { id } = req.params;
   const { currentPassword, newPassword } = req.body;
   if (!currentPassword || !newPassword) {
-    return res
-      .status(400)
-      .json({ error: "Current and new password are required." });
+    return res.status(400).json({ error: "Current and new password are required." });
   }
   try {
-    // Get the user's hashed password
-    const userResult = await pool.query(
-      'SELECT password FROM "user" WHERE id = $1',
-      [id]
-    );
-    if (userResult.rows.length === 0) {
+    const hashedPassword = await getUserHashedPassword(id);
+    if (!hashedPassword) {
       return res.status(404).json({ error: "User not found." });
     }
-    const hashedPassword = userResult.rows[0].password;
-    // Compare current password
     const bcrypt = require("bcrypt");
     const isMatch = await bcrypt.compare(currentPassword, hashedPassword);
     if (!isMatch) {
       return res.status(401).json({ error: "Current password is incorrect." });
     }
-    // Hash new password
     const newHashedPassword = await bcrypt.hash(newPassword, 10);
-    // Update password in DB
-    await pool.query('UPDATE "user" SET password = $1 WHERE id = $2', [
-      newHashedPassword,
-      id,
-    ]);
+    await updateUserPassword(id, newHashedPassword);
     res.json({ message: "Password updated successfully." });
   } catch (err) {
     console.error("[USERS] Error updating password:", err.message);
@@ -154,15 +120,10 @@ router.post("/:id/delete", async (req, res) => {
     return res.status(400).json({ error: "Password is required." });
   }
   try {
-    // Get the user's hashed password
-    const userResult = await pool.query(
-      'SELECT password FROM "user" WHERE id = $1',
-      [id]
-    );
-    if (userResult.rows.length === 0) {
+    const hashedPassword = await getUserHashedPassword(id);
+    if (!hashedPassword) {
       return res.status(404).json({ error: "User not found." });
     }
-    const hashedPassword = userResult.rows[0].password;
     const bcrypt = require("bcrypt");
     const isMatch = await bcrypt.compare(password, hashedPassword);
     if (!isMatch) {
@@ -171,25 +132,16 @@ router.post("/:id/delete", async (req, res) => {
     if (validateOnly) {
       return res.json({ message: "Password validated." });
     }
-    await pool.query('BEGIN');
-    // Find all direct chats the user is a member of
-    const directChatsResult = await pool.query(
-      `SELECT c.id FROM chat c
-       JOIN chat_member cm ON c.id = cm.chat_id
-       WHERE cm.user_id = $1 AND c.chat_type = 'direct'`,
-      [id]
-    );
-    const directChatIds = directChatsResult.rows.map(row => row.id);
-    // Delete the user (cascade will handle related rows)
-    await pool.query('DELETE FROM "user" WHERE id = $1', [id]);
-    // Delete all direct chats the user was a member of (cascade will handle chat_member and message)
+    await pool.query("BEGIN");
+    const directChatIds = await getDirectChatIdsForUser(id);
+    await deleteUserById(id);
     for (const chatId of directChatIds) {
-      await pool.query('DELETE FROM chat WHERE id = $1', [chatId]);
+      await deleteChatById(chatId);
     }
-    await pool.query('COMMIT');
+    await pool.query("COMMIT");
     res.json({ message: "Account and related direct chats deleted successfully." });
   } catch (err) {
-    await pool.query('ROLLBACK');
+    await pool.query("ROLLBACK");
     console.error("[USERS] Error deleting account:", err.message);
     res.status(500).json({ error: "Server error" });
   }
