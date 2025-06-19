@@ -27,84 +27,65 @@ const getChatMessages = async (chat_id) => {
   }
 };
 
-// ✅ Fetch or create a chat based on activity_id and user_id
-const getOrCreateActivityChat = async (activity_id, user_id) => {
+// Unified function to fetch or create a chat (group or direct)
+// Pass { chat_type: 'activity', activity_id, user_ids: [user_id] } for group
+// Pass { chat_type: 'direct', user_ids: [user_id, other_user_id] } for direct
+const getOrCreateChat = async ({ chat_type, activity_id, user_ids }) => {
   try {
-    // Check if a chat already exists
-    const result = await pool.query(
-      `SELECT * FROM chat WHERE chat_type = 'activity' AND activity_id = $1`,
-      [activity_id]
-    );
-
-    let chat = result.rows[0];
-
-    // If no chat exists, create one
-    if (!chat) {
-      const insertResult = await pool.query(
-        `INSERT INTO chat (chat_type, activity_id) VALUES ('activity', $1) RETURNING *`,
-        [activity_id]
+    let chat;
+    if (chat_type === "activity" && activity_id) {
+      // Check if group chat exists
+      const result = await pool.query(`SELECT * FROM chat WHERE chat_type = 'activity' AND activity_id = $1`, [activity_id]);
+      chat = result.rows[0];
+      if (!chat) {
+        const insertResult = await pool.query(`INSERT INTO chat (chat_type, activity_id) VALUES ('activity', $1) RETURNING *`, [activity_id]);
+        chat = insertResult.rows[0];
+      }
+      // Add all users to chat_member (usually just one)
+      for (const user_id of user_ids) {
+        await pool.query(
+          `INSERT INTO chat_member (chat_id, user_id)
+           SELECT $1, $2 WHERE NOT EXISTS (
+             SELECT 1 FROM chat_member WHERE chat_id = $1 AND user_id = $2
+           )`,
+          [chat.id, user_id]
+        );
+      }
+    } else if (chat_type === "direct" && user_ids.length === 2) {
+      // Check if direct chat exists
+      const result = await pool.query(
+        `SELECT c.* FROM chat c
+         JOIN chat_member cm1 ON c.id = cm1.chat_id
+         JOIN chat_member cm2 ON c.id = cm2.chat_id
+         WHERE c.chat_type = 'direct' AND cm1.user_id = $1 AND cm2.user_id = $2`,
+        [user_ids[0], user_ids[1]]
       );
-      chat = insertResult.rows[0];
-
-      // Add the user to the chat
-      await pool.query(
-        `INSERT INTO chat_member (chat_id, user_id) VALUES ($1, $2)`,
-        [chat.id, user_id]
-      );
+      chat = result.rows[0];
+      if (!chat) {
+        const insertResult = await pool.query(`INSERT INTO chat (chat_type) VALUES ('direct') RETURNING *`);
+        chat = insertResult.rows[0];
+      }
+      // Add both users to chat_member
+      for (const user_id of user_ids) {
+        await pool.query(
+          `INSERT INTO chat_member (chat_id, user_id)
+           SELECT $1, $2 WHERE NOT EXISTS (
+             SELECT 1 FROM chat_member WHERE chat_id = $1 AND user_id = $2
+           )`,
+          [chat.id, user_id]
+        );
+      }
+    } else {
+      throw new Error("Invalid chat_type or parameters");
     }
-
-    console.log("getOrCreateActivityChat: Returning chat_id:", chat.id); // Log the chat_id being returned
     return chat;
   } catch (err) {
-    console.error("Error fetching or creating activity chat:", err.message);
-    return {
-      error: "Database error while fetching or creating activity chat.",
-    };
-  }
-};
-
-// ✅ Fetch or create a direct chat between two users
-const getOrCreateDirectChat = async (user_id, other_user_id) => {
-  try {
-    // Check if a direct chat already exists
-    const result = await pool.query(
-      `SELECT c.* FROM chat c
-       JOIN chat_member cm1 ON c.id = cm1.chat_id
-       JOIN chat_member cm2 ON c.id = cm2.chat_id
-       WHERE c.chat_type = 'direct' AND cm1.user_id = $1 AND cm2.user_id = $2`,
-      [user_id, other_user_id]
-    );
-
-    let chat = result.rows[0];
-
-    // If no chat exists, create one
-    if (!chat) {
-      const insertResult = await pool.query(
-        `INSERT INTO chat (chat_type) VALUES ('direct') RETURNING *`
-      );
-      chat = insertResult.rows[0];
-
-      // Add both users to the chat
-      await pool.query(
-        `INSERT INTO chat_member (chat_id, user_id) VALUES ($1, $2)`,
-        [chat.id, user_id]
-      );
-      await pool.query(
-        `INSERT INTO chat_member (chat_id, user_id) VALUES ($1, $2)`,
-        [chat.id, other_user_id]
-      );
-    }
-
-    console.log("getOrCreateDirectChat: Returning chat_id:", chat.id); // Log the chat_id being returned
-    return chat;
-  } catch (err) {
-    console.error("Error fetching or creating direct chat:", err.message);
-    return { error: "Database error while fetching or creating direct chat." };
+    console.error("Error fetching or creating chat:", err.message);
+    return { error: "Database error while fetching or creating chat." };
   }
 };
 
 module.exports = {
   getChatMessages,
-  getOrCreateActivityChat,
-  getOrCreateDirectChat,
+  getOrCreateChat,
 };

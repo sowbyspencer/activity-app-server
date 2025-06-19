@@ -1,5 +1,5 @@
 const pool = require("../db.ts");
-const { getOrCreateDirectChat } = require("./chat");
+const { getOrCreateChat } = require("./chat");
 
 // Get all activities
 const getAllActivities = async () => {
@@ -96,11 +96,21 @@ const recordSwipe = async (userId, activityId, liked) => {
 
     // --- NEW LOGIC: Create direct chats with all other members ---
     // Get all other user IDs in this activity (excluding the new member)
+    // --- NEW LOGIC: Add user to group chat (activity chat) as well ---
+    await getOrCreateChat({
+      chat_type: "activity",
+      activity_id: activityId,
+      user_ids: [userId],
+    });
+    // --- existing direct chat logic ---
     const otherMembersRes = await pool.query(`SELECT user_id FROM activity_member WHERE activity_id = $1 AND user_id != $2`, [activityId, userId]);
     const otherUserIds = otherMembersRes.rows.map((row) => row.user_id);
     for (const otherUserId of otherUserIds) {
       // Create or fetch direct chat between userId and otherUserId
-      const chat = await getOrCreateDirectChat(userId, otherUserId);
+      const chat = await getOrCreateChat({
+        chat_type: "direct",
+        user_ids: [userId, otherUserId],
+      });
       directChats.push({
         chat_id: chat.id,
         user_ids: [userId, otherUserId],
