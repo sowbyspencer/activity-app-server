@@ -142,7 +142,23 @@ const resetSwipes = async (userId) => {
 };
 
 // Create a new activity
-const createActivity = async ({ name, location, has_cost, cost, url, description, user_id, images }) => {
+const createActivity = async ({
+  name,
+  location,
+  has_cost,
+  cost,
+  url,
+  description,
+  user_id,
+  images,
+  available_sun,
+  available_mon,
+  available_tue,
+  available_wed,
+  available_thu,
+  available_fri,
+  available_sat,
+}) => {
   // Validate cost field
   const validatedCost = cost === "" || cost === null ? null : parseFloat(cost);
   if (validatedCost !== null && isNaN(validatedCost)) {
@@ -155,10 +171,25 @@ const createActivity = async ({ name, location, has_cost, cost, url, description
 
     // Insert activity
     const activityResult = await client.query(
-      `INSERT INTO activity (name, location, has_cost, cost, url, description, user_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+      `INSERT INTO activity (name, location, has_cost, cost, url, description, user_id, available_sun, available_mon, available_tue, available_wed, available_thu, available_fri, available_sat)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
        RETURNING *;`,
-      [name, location, has_cost, validatedCost, url, description, user_id]
+      [
+        name,
+        location,
+        has_cost,
+        validatedCost,
+        url,
+        description,
+        user_id,
+        available_sun,
+        available_mon,
+        available_tue,
+        available_wed,
+        available_thu,
+        available_fri,
+        available_sat,
+      ]
     );
 
     const activityId = activityResult.rows[0].id;

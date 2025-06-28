@@ -36,16 +36,48 @@ router.get("/", async (req, res) => {
 // Route to create a new activity
 // POST /activities - Create a new activity
 router.post("/", upload.array("images"), async (req, res) => {
-  const { name, location, has_cost, cost, url, description, user_id } = req.body;
+  const {
+    name,
+    location,
+    has_cost,
+    cost,
+    url,
+    description,
+    user_id,
+    available_sun,
+    available_mon,
+    available_tue,
+    available_wed,
+    available_thu,
+    available_fri,
+    available_sat,
+  } = req.body;
 
   // Convert types
   const parsedHasCost = has_cost === "true";
   const parsedUserId = parseInt(user_id, 10);
+  const parsedAvailability = {
+    available_sun: available_sun === "true",
+    available_mon: available_mon === "true",
+    available_tue: available_tue === "true",
+    available_wed: available_wed === "true",
+    available_thu: available_thu === "true",
+    available_fri: available_fri === "true",
+    available_sat: available_sat === "true",
+  };
 
   // Validate request body
-  if (!name || !location || typeof parsedHasCost !== "boolean" || isNaN(parsedUserId)) {
+  if (
+    !name ||
+    !location ||
+    typeof parsedHasCost !== "boolean" ||
+    isNaN(parsedUserId) ||
+    Object.values(parsedAvailability).some((val) => typeof val !== "boolean")
+  ) {
     console.log("[BACKEND] Validation failed for request body:", req.body);
-    return res.status(400).json({ error: "Missing or invalid required fields: name, location, has_cost, user_id." });
+    return res.status(400).json({
+      error: "Missing or invalid required fields: name, location, has_cost, user_id, availability fields.",
+    });
   }
 
   try {
@@ -60,6 +92,7 @@ router.post("/", upload.array("images"), async (req, res) => {
       description,
       user_id: parsedUserId,
       images: imagePaths,
+      ...parsedAvailability,
     });
 
     const result = await createActivity({
@@ -71,6 +104,7 @@ router.post("/", upload.array("images"), async (req, res) => {
       description,
       user_id: parsedUserId,
       images: imagePaths,
+      ...parsedAvailability,
     });
 
     console.log("[BACKEND] Activity created successfully:", result);
