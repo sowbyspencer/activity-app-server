@@ -3,7 +3,15 @@ const router = express.Router();
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
-const { getUnswipedActivities, recordSwipe, resetSwipes, createActivity, leaveActivity, getActivitiesByCreator } = require("../queries/activities");
+const {
+  getUnswipedActivities,
+  recordSwipe,
+  resetSwipes,
+  createActivity,
+  leaveActivity,
+  getActivitiesByCreator,
+  editActivity,
+} = require("../queries/activities");
 
 // Configure multer for activity image uploads
 const storage = multer.diskStorage({
@@ -174,10 +182,94 @@ router.get("/created", async (req, res) => {
   try {
     console.log(`[ACTIVITIES] Fetching activities created by user_id: ${userId}`);
     const activities = await getActivitiesByCreator(userId);
+    console.log("[BACKEND] Activities fetched for user:", activities);
     res.json(activities);
   } catch (err) {
     console.error("[ACTIVITIES] Error fetching activities by creator:", err.message);
     res.status(500).json({ error: "Failed to fetch activities. Please try again later." });
+  }
+});
+
+// Route to edit an existing activity
+// PUT /activities/:id - Edit an existing activity
+router.put("/:id", upload.array("images"), async (req, res) => {
+  const {
+    name,
+    location,
+    has_cost,
+    cost,
+    url,
+    description,
+    user_id,
+    available_sun,
+    available_mon,
+    available_tue,
+    available_wed,
+    available_thu,
+    available_fri,
+    available_sat,
+  } = req.body;
+
+  // Convert types
+  const parsedHasCost = has_cost === "true";
+  const parsedUserId = parseInt(user_id, 10);
+  const parsedAvailability = {
+    available_sun: available_sun === "true",
+    available_mon: available_mon === "true",
+    available_tue: available_tue === "true",
+    available_wed: available_wed === "true",
+    available_thu: available_thu === "true",
+    available_fri: available_fri === "true",
+    available_sat: available_sat === "true",
+  };
+
+  // Validate request body
+  if (
+    !name ||
+    !location ||
+    typeof parsedHasCost !== "boolean" ||
+    isNaN(parsedUserId) ||
+    Object.values(parsedAvailability).some((val) => typeof val !== "boolean")
+  ) {
+    console.log("[BACKEND] Validation failed for request body:", req.body);
+    return res.status(400).json({
+      error: "Missing or invalid required fields: name, location, has_cost, user_id, availability fields.",
+    });
+  }
+
+  try {
+    const imagePaths = req.files.map((file) => `${process.env.IMAGE_PATH}/activities/${file.filename}`);
+
+    console.log("[BACKEND] Editing activity with data:", {
+      name,
+      location,
+      has_cost: parsedHasCost,
+      cost,
+      url,
+      description,
+      user_id: parsedUserId,
+      images: imagePaths,
+      ...parsedAvailability,
+    });
+
+    const result = await editActivity({
+      id: req.params.id,
+      name,
+      location,
+      has_cost: parsedHasCost,
+      cost,
+      url,
+      description,
+      user_id: parsedUserId,
+      images: imagePaths,
+      ...parsedAvailability,
+    });
+
+    console.log("[BACKEND] Activity edited successfully:", result);
+    res.status(200).json(result);
+  } catch (err) {
+    console.error("[BACKEND] Error editing activity:", err.message);
+    res.status(400).json({ error: err.message });
   }
 });
 
