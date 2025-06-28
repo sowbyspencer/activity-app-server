@@ -3,7 +3,7 @@ const router = express.Router();
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
-const { getUnswipedActivities, recordSwipe, resetSwipes, createActivity, leaveActivity } = require("../queries/activities");
+const { getUnswipedActivities, recordSwipe, resetSwipes, createActivity, leaveActivity, getActivitiesByCreator } = require("../queries/activities");
 
 // Configure multer for activity image uploads
 const storage = multer.diskStorage({
@@ -128,6 +128,22 @@ router.post("/leave", async (req, res) => {
   } catch (err) {
     console.error("[ACTIVITIES] Error leaving activity:", err.message);
     res.status(500).json({ error: "Failed to leave activity. Please try again later." });
+  }
+});
+
+// Route to get activities created by a specific user
+router.get("/created", async (req, res) => {
+  const userId = req.query.user_id;
+  if (!userId) {
+    return res.status(400).json({ error: "Missing required user_id query parameter." });
+  }
+  try {
+    console.log(`[ACTIVITIES] Fetching activities created by user_id: ${userId}`);
+    const activities = await getActivitiesByCreator(userId);
+    res.json(activities);
+  } catch (err) {
+    console.error("[ACTIVITIES] Error fetching activities by creator:", err.message);
+    res.status(500).json({ error: "Failed to fetch activities. Please try again later." });
   }
 });
 
