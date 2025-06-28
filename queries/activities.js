@@ -142,15 +142,47 @@ const resetSwipes = async (userId) => {
 };
 
 // Create a new activity
-const createActivity = async ({ name, location, has_cost, cost, url, description }) => {
-  await pool.query(`INSERT INTO activity (name, location, has_cost, cost, url, description) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *;`, [
-    name,
-    location,
-    has_cost,
-    cost,
-    url,
-    description,
-  ]);
+const createActivity = async ({ name, location, has_cost, cost, url, description, user_id, images }) => {
+  // Validate cost field
+  const validatedCost = cost === "" || cost === null ? null : parseFloat(cost);
+  if (validatedCost !== null && isNaN(validatedCost)) {
+    throw new Error("Invalid cost value. Must be a number or null.");
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    // Insert activity
+    const activityResult = await client.query(
+      `INSERT INTO activity (name, location, has_cost, cost, url, description, user_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       RETURNING *;`,
+      [name, location, has_cost, validatedCost, url, description, user_id]
+    );
+
+    const activityId = activityResult.rows[0].id;
+
+    // Insert images
+    if (images && images.length > 0) {
+      const imageQueries = images.map((imageUrl) => {
+        return client.query(
+          `INSERT INTO activity_image (activity_id, image_url)
+           VALUES ($1, $2);`,
+          [activityId, imageUrl]
+        );
+      });
+      await Promise.all(imageQueries);
+    }
+
+    await client.query("COMMIT");
+    return activityResult.rows[0];
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
 };
 
 // Leave or unlike an activity: remove from activity_member, group chat, and direct chats if no other shared activities

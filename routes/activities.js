@@ -1,6 +1,20 @@
 const express = require("express");
 const router = express.Router();
+const multer = require("multer");
+const path = require("path");
+const fs = require("fs");
 const { getUnswipedActivities, recordSwipe, resetSwipes, createActivity, leaveActivity } = require("../queries/activities");
+
+// Configure multer for activity image uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, path.join(__dirname, "../public/images/activities"));
+  },
+  filename: (req, file, cb) => {
+    cb(null, `${Date.now()}-${file.originalname}`);
+  },
+});
+const upload = multer({ storage });
 
 // Route to get all activities or only unmatched activities for a user
 // Test URL: http://10.244.131.46:5000/activities?user_id=1
@@ -20,22 +34,50 @@ router.get("/", async (req, res) => {
 });
 
 // Route to create a new activity
-router.post("/", async (req, res) => {
-  const { name, location, has_cost, cost, url, description } = req.body;
-  console.log("[ACTIVITIES] Creating a new activity with data:", {
-    name,
-    location,
-    has_cost,
-    cost,
-    url,
-    description,
-  });
+// POST /activities - Create a new activity
+router.post("/", upload.array("images"), async (req, res) => {
+  const { name, location, has_cost, cost, url, description, user_id } = req.body;
+
+  // Convert types
+  const parsedHasCost = has_cost === "true";
+  const parsedUserId = parseInt(user_id, 10);
+
+  // Validate request body
+  if (!name || !location || typeof parsedHasCost !== "boolean" || isNaN(parsedUserId)) {
+    console.log("[BACKEND] Validation failed for request body:", req.body);
+    return res.status(400).json({ error: "Missing or invalid required fields: name, location, has_cost, user_id." });
+  }
+
   try {
-    const result = await createActivity({ name, location, has_cost, cost, url, description });
+    const imagePaths = req.files.map((file) => `${process.env.IMAGE_PATH}/activities/${file.filename}`);
+
+    console.log("[BACKEND] Creating a new activity with data:", {
+      name,
+      location,
+      has_cost: parsedHasCost,
+      cost,
+      url,
+      description,
+      user_id: parsedUserId,
+      images: imagePaths,
+    });
+
+    const result = await createActivity({
+      name,
+      location,
+      has_cost: parsedHasCost,
+      cost,
+      url,
+      description,
+      user_id: parsedUserId,
+      images: imagePaths,
+    });
+
+    console.log("[BACKEND] Activity created successfully:", result);
     res.status(201).json(result);
   } catch (err) {
-    console.error("[ACTIVITIES] Error creating activity:", err.message);
-    res.status(500).json({ error: "Failed to create activity. Please try again later." });
+    console.error("[BACKEND] Error creating activity:", err.message);
+    res.status(400).json({ error: err.message });
   }
 });
 
