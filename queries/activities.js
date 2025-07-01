@@ -377,11 +377,33 @@ const editActivity = async (fields) => {
     if (fields.images && fields.images.length > 0) {
       // Find images to delete (present in DB, not in new list)
       const imagesToDelete = currentImages.filter((img) => !fields.images.includes(img));
-      // Delete files from disk using IMAGE_PATH from .env (for logging), but use local path for deletion
+      // Delete files from disk using IMAGE_PATH from .env (replace up to /activities/ with local path)
       for (const imgUrl of imagesToDelete) {
         if (imgUrl) {
-          console.log("[editActivity] Would delete image at:", imgUrl);
-          // No file system deletion, just log the DB url for debugging
+          // Convert IMAGE_PATH URL to local file path
+          const imagePathEnv = process.env.IMAGE_PATH;
+          const localBase = path.join(__dirname, "../public/images");
+          let localPath = imgUrl;
+          if (imagePathEnv && imgUrl.startsWith(imagePathEnv)) {
+            // Hosted: replace IMAGE_PATH with localBase
+            localPath = path.join(localBase, imgUrl.replace(imagePathEnv, "").replace(/^\//, ""));
+          } else {
+            // Local: remove protocol/domain up to /activities/
+            const idx = imgUrl.indexOf("/activities/");
+            if (idx !== -1) {
+              localPath = path.join(localBase, imgUrl.substring(idx + 1));
+            }
+          }
+          try {
+            if (fs.existsSync(localPath)) {
+              fs.unlinkSync(localPath);
+              console.log("[editActivity] Deleted image file:", localPath);
+            } else {
+              console.log("[editActivity] File not found for deletion:", localPath);
+            }
+          } catch (err) {
+            console.error("[editActivity] Error deleting image file:", localPath, err);
+          }
         }
       }
       // Only update DB if the image is new, otherwise keep the preexisting url
