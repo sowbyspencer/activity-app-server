@@ -301,33 +301,42 @@ const getActivitiesByCreator = async (userId) => {
   return result.rows;
 };
 
-// Edit an existing activity
-const editActivity = async ({
-  id,
-  name,
-  location,
-  has_cost,
-  cost,
-  url,
-  description,
-  user_id,
-  images,
-  available_sun,
-  available_mon,
-  available_tue,
-  available_wed,
-  available_thu,
-  available_fri,
-  available_sat,
-}) => {
-  const validatedCost = cost === "" || cost === null ? null : parseFloat(cost);
-  if (validatedCost !== null && isNaN(validatedCost)) {
-    throw new Error("Invalid cost value. Must be a number or null.");
-  }
+// Edit an existing activity (moved from editActivity.js)
+const editActivity = async (fields) => {
+  const { id } = fields;
+  if (!id) throw new Error("Activity ID is required");
 
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
+
+    // Fetch current activity
+    const currentRes = await client.query(`SELECT * FROM activity WHERE id = $1`, [id]);
+    if (currentRes.rows.length === 0) throw new Error("Activity not found");
+    const current = currentRes.rows[0];
+
+    // Merge fields: use provided value if present, else current value
+    const name = fields.name !== undefined ? fields.name : current.name;
+    const location = fields.location !== undefined ? fields.location : current.location;
+    const has_cost = fields.has_cost !== undefined ? fields.has_cost : current.has_cost;
+    let cost = fields.cost !== undefined ? fields.cost : current.cost;
+    const url = fields.url !== undefined ? fields.url : current.url;
+    const description = fields.description !== undefined ? fields.description : current.description;
+    const user_id = fields.user_id !== undefined ? fields.user_id : current.user_id;
+    const available_sun = fields.available_sun !== undefined ? fields.available_sun : current.available_sun;
+    const available_mon = fields.available_mon !== undefined ? fields.available_mon : current.available_mon;
+    const available_tue = fields.available_tue !== undefined ? fields.available_tue : current.available_tue;
+    const available_wed = fields.available_wed !== undefined ? fields.available_wed : current.available_wed;
+    const available_thu = fields.available_thu !== undefined ? fields.available_thu : current.available_thu;
+    const available_fri = fields.available_fri !== undefined ? fields.available_fri : current.available_fri;
+    const available_sat = fields.available_sat !== undefined ? fields.available_sat : current.available_sat;
+
+    // Validate cost
+    if (cost === "" || cost === null) cost = null;
+    else {
+      cost = parseFloat(cost);
+      if (cost !== null && isNaN(cost)) throw new Error("Invalid cost value. Must be a number or null.");
+    }
 
     // Update activity
     const activityResult = await client.query(
@@ -341,7 +350,7 @@ const editActivity = async ({
         name,
         location,
         has_cost,
-        validatedCost,
+        cost,
         url,
         description,
         user_id,
@@ -358,11 +367,10 @@ const editActivity = async ({
 
     const activityId = activityResult.rows[0].id;
 
-    // Update images
-    if (images && images.length > 0) {
+    // Update images if provided
+    if (fields.images && fields.images.length > 0) {
       await client.query(`DELETE FROM activity_image WHERE activity_id = $1;`, [activityId]);
-
-      const imageQueries = images.map((imageUrl) => {
+      const imageQueries = fields.images.map((imageUrl) => {
         return client.query(
           `INSERT INTO activity_image (activity_id, image_url)
            VALUES ($1, $2);`,

@@ -193,82 +193,113 @@ router.get("/created", async (req, res) => {
 // Route to edit an existing activity
 // PUT /activities/:id - Edit an existing activity
 router.put("/:id", upload.array("images"), async (req, res) => {
-  const {
-    name,
-    location,
-    has_cost,
-    cost,
-    url,
-    description,
-    user_id,
-    available_sun,
-    available_mon,
-    available_tue,
-    available_wed,
-    available_thu,
-    available_fri,
-    available_sat,
-  } = req.body;
+  // Build updateFields object with only provided fields
+  const updateFields = { id: req.params.id };
+  const body = req.body;
 
-  // Convert types
-  const parsedHasCost = has_cost === "true";
-  const parsedUserId = parseInt(user_id, 10);
-  const parsedAvailability = {
-    available_sun: available_sun === "true",
-    available_mon: available_mon === "true",
-    available_tue: available_tue === "true",
-    available_wed: available_wed === "true",
-    available_thu: available_thu === "true",
-    available_fri: available_fri === "true",
-    available_sat: available_sat === "true",
-  };
+  // List of fields to check
+  const fieldList = [
+    "name",
+    "location",
+    "has_cost",
+    "cost",
+    "url",
+    "description",
+    "user_id",
+    "available_sun",
+    "available_mon",
+    "available_tue",
+    "available_wed",
+    "available_thu",
+    "available_fri",
+    "available_sat",
+  ];
 
-  // Validate request body
-  if (
-    !name ||
-    !location ||
-    typeof parsedHasCost !== "boolean" ||
-    isNaN(parsedUserId) ||
-    Object.values(parsedAvailability).some((val) => typeof val !== "boolean")
-  ) {
-    console.log("[BACKEND] Validation failed for request body:", req.body);
-    return res.status(400).json({
-      error: "Missing or invalid required fields: name, location, has_cost, user_id, availability fields.",
-    });
+  for (const field of fieldList) {
+    if (body[field] !== undefined) {
+      // Parse booleans and numbers as needed
+      if (
+        ["has_cost", "available_sun", "available_mon", "available_tue", "available_wed", "available_thu", "available_fri", "available_sat"].includes(
+          field
+        )
+      ) {
+        updateFields[field] = body[field] === "true";
+      } else if (field === "user_id") {
+        updateFields[field] = parseInt(body[field], 10);
+      } else {
+        updateFields[field] = body[field];
+      }
+    }
+  }
+
+  // Handle images if present
+  const imagePaths = req.files && req.files.length > 0 ? req.files.map((file) => `${process.env.IMAGE_PATH}/activities/${file.filename}`) : undefined;
+  if (imagePaths) {
+    updateFields.images = imagePaths;
   }
 
   try {
-    const imagePaths = req.files.map((file) => `${process.env.IMAGE_PATH}/activities/${file.filename}`);
-
-    console.log("[BACKEND] Editing activity with data:", {
-      name,
-      location,
-      has_cost: parsedHasCost,
-      cost,
-      url,
-      description,
-      user_id: parsedUserId,
-      images: imagePaths,
-      ...parsedAvailability,
-    });
-
-    const result = await editActivity({
-      id: req.params.id,
-      name,
-      location,
-      has_cost: parsedHasCost,
-      cost,
-      url,
-      description,
-      user_id: parsedUserId,
-      images: imagePaths,
-      ...parsedAvailability,
-    });
-
+    console.log("[BACKEND] Editing activity with data:", updateFields);
+    const result = await editActivity(updateFields);
     console.log("[BACKEND] Activity edited successfully:", result);
     res.status(200).json(result);
   } catch (err) {
     console.error("[BACKEND] Error editing activity:", err.message);
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// POST /activities/:id - Edit an existing activity (for clients that use POST with FormData)
+router.post("/:id", upload.array("images"), async (req, res) => {
+  // Build updateFields object with only provided fields
+  const updateFields = { id: req.params.id };
+  const body = req.body;
+
+  const fieldList = [
+    "name",
+    "location",
+    "has_cost",
+    "cost",
+    "url",
+    "description",
+    "user_id",
+    "available_sun",
+    "available_mon",
+    "available_tue",
+    "available_wed",
+    "available_thu",
+    "available_fri",
+    "available_sat",
+  ];
+
+  for (const field of fieldList) {
+    if (body[field] !== undefined) {
+      if (
+        ["has_cost", "available_sun", "available_mon", "available_tue", "available_wed", "available_thu", "available_fri", "available_sat"].includes(
+          field
+        )
+      ) {
+        updateFields[field] = body[field] === "true";
+      } else if (field === "user_id") {
+        updateFields[field] = parseInt(body[field], 10);
+      } else {
+        updateFields[field] = body[field];
+      }
+    }
+  }
+
+  const imagePaths = req.files && req.files.length > 0 ? req.files.map((file) => `${process.env.IMAGE_PATH}/activities/${file.filename}`) : undefined;
+  if (imagePaths) {
+    updateFields.images = imagePaths;
+  }
+
+  try {
+    console.log("[BACKEND] (POST) Editing activity with data:", updateFields);
+    const result = await editActivity(updateFields);
+    console.log("[BACKEND] (POST) Activity edited successfully:", result);
+    res.status(200).json(result);
+  } catch (err) {
+    console.error("[BACKEND] (POST) Error editing activity:", err.message);
     res.status(400).json({ error: err.message });
   }
 });
