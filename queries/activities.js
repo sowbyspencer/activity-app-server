@@ -431,6 +431,49 @@ const editActivity = async (fields) => {
   }
 };
 
+// Delete an activity and its images
+const deleteActivity = async (activityId) => {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    // Get all image URLs for this activity
+    const imgRes = await client.query(`SELECT image_url FROM activity_image WHERE activity_id = $1`, [activityId]);
+    const images = imgRes.rows.map((row) => row.image_url);
+    // Delete images from disk
+    const imagePathEnv = process.env.IMAGE_PATH;
+    const localBase = path.join(__dirname, "../public/images");
+    for (const imgUrl of images) {
+      let localPath = imgUrl;
+      if (imagePathEnv && imgUrl.startsWith(imagePathEnv)) {
+        localPath = path.join(localBase, imgUrl.replace(imagePathEnv, "").replace(/^\//, ""));
+      } else {
+        const idx = imgUrl.indexOf("/activities/");
+        if (idx !== -1) {
+          localPath = path.join(localBase, imgUrl.substring(idx + 1));
+        }
+      }
+      try {
+        if (fs.existsSync(localPath)) {
+          fs.unlinkSync(localPath);
+        }
+      } catch (err) {
+        console.error("[deleteActivity] Error deleting image file:", localPath, err);
+      }
+    }
+    // Delete from activity_image (if not ON DELETE CASCADE)
+    await client.query(`DELETE FROM activity_image WHERE activity_id = $1`, [activityId]);
+    // Delete the activity
+    await client.query(`DELETE FROM activity WHERE id = $1`, [activityId]);
+    await client.query("COMMIT");
+    return { success: true };
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+};
+
 module.exports = {
   getAllActivities,
   getUnswipedActivities,
@@ -440,4 +483,5 @@ module.exports = {
   leaveActivity,
   getActivitiesByCreator,
   editActivity,
+  deleteActivity,
 };

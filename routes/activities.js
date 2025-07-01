@@ -11,6 +11,7 @@ const {
   leaveActivity,
   getActivitiesByCreator,
   editActivity,
+  deleteActivity,
 } = require("../queries/activities");
 
 // Configure multer for activity image uploads
@@ -263,6 +264,18 @@ router.put("/:id", upload.array("images"), async (req, res) => {
     res.status(200).json(result);
   } catch (err) {
     console.error("[BACKEND] Error editing activity:", err.message);
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// DELETE /activities/:id - Delete an activity and its images
+router.delete("/:id", async (req, res) => {
+  const activityId = req.params.id;
+  try {
+    const result = await deleteActivity(activityId);
+    res.status(200).json({ success: true });
+  } catch (err) {
+    console.error("[BACKEND] Error deleting activity:", err.message);
     res.status(400).json({ error: err.message });
   }
 });
