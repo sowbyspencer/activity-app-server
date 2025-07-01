@@ -182,7 +182,7 @@ router.get("/created", async (req, res) => {
   try {
     console.log(`[ACTIVITIES] Fetching activities created by user_id: ${userId}`);
     const activities = await getActivitiesByCreator(userId);
-    console.log("[BACKEND] Activities fetched for user:", activities);
+    console.log("[BACKEND] Activities fetched for user:", userId);
     res.json(activities);
   } catch (err) {
     console.error("[ACTIVITIES] Error fetching activities by creator:", err.message);
@@ -233,9 +233,18 @@ router.put("/:id", upload.array("images"), async (req, res) => {
   }
 
   // Handle images if present
-  const imagePaths = req.files && req.files.length > 0 ? req.files.map((file) => `${process.env.IMAGE_PATH}/activities/${file.filename}`) : undefined;
-  if (imagePaths) {
-    updateFields.images = imagePaths;
+  const imagePaths = req.files && req.files.length > 0 ? req.files.map((file) => `${process.env.IMAGE_PATH}/activities/${file.filename}`) : [];
+  // Merge with existing images if provided
+  let existingImages = [];
+  if (body.existingImages) {
+    if (Array.isArray(body.existingImages)) {
+      existingImages = body.existingImages;
+    } else if (typeof body.existingImages === "string") {
+      existingImages = [body.existingImages];
+    }
+  }
+  if (imagePaths.length > 0 || existingImages.length > 0) {
+    updateFields.images = [...existingImages, ...imagePaths];
   }
 
   try {
