@@ -24,6 +24,13 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
+// Helper to get full URL for an uploaded file
+function getFullImageUrl(req, filename) {
+  const protocol = req.protocol;
+  const host = req.get("host");
+  return `${protocol}://${host}/images/activities/${filename}`;
+}
+
 // Route to get all activities or only unmatched activities for a user
 // Test URL: http://10.244.131.46:5000/activities?user_id=1
 router.get("/", async (req, res) => {
@@ -89,6 +96,7 @@ router.post("/", upload.array("images"), async (req, res) => {
   }
 
   try {
+    // Use IMAGE_PATH from .env for full URL
     const imagePaths = req.files.map((file) => `${process.env.IMAGE_PATH}/activities/${file.filename}`);
 
     console.log("[BACKEND] Creating a new activity with data:", {
@@ -233,14 +241,15 @@ router.put("/:id", upload.array("images"), async (req, res) => {
   }
 
   // Handle images if present
+  // Use IMAGE_PATH from .env for full URL
   const imagePaths = req.files && req.files.length > 0 ? req.files.map((file) => `${process.env.IMAGE_PATH}/activities/${file.filename}`) : [];
   // Merge with existing images if provided
   let existingImages = [];
   if (body.existingImages) {
     if (Array.isArray(body.existingImages)) {
-      existingImages = body.existingImages;
+      existingImages = body.existingImages; // Keep full original path
     } else if (typeof body.existingImages === "string") {
-      existingImages = [body.existingImages];
+      existingImages = [body.existingImages]; // Keep full original path
     }
   }
   if (imagePaths.length > 0 || existingImages.length > 0) {

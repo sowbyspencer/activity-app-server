@@ -1,5 +1,7 @@
 const pool = require("../db.ts");
 const { getOrCreateChat } = require("./chat");
+const fs = require("fs");
+const path = require("path");
 
 // Get all activities
 const getAllActivities = async () => {
@@ -315,6 +317,10 @@ const editActivity = async (fields) => {
     if (currentRes.rows.length === 0) throw new Error("Activity not found");
     const current = currentRes.rows[0];
 
+    // Fetch current images
+    const currentImagesRes = await client.query(`SELECT image_url FROM activity_image WHERE activity_id = $1`, [id]);
+    const currentImages = currentImagesRes.rows.map((row) => row.image_url);
+
     // Merge fields: use provided value if present, else current value
     const name = fields.name !== undefined ? fields.name : current.name;
     const location = fields.location !== undefined ? fields.location : current.location;
@@ -369,12 +375,25 @@ const editActivity = async (fields) => {
 
     // Update images if provided
     if (fields.images && fields.images.length > 0) {
+      // Find images to delete (present in DB, not in new list)
+      const imagesToDelete = currentImages.filter((img) => !fields.images.includes(img));
+      // Delete files from disk using IMAGE_PATH from .env (for logging), but use local path for deletion
+      for (const imgUrl of imagesToDelete) {
+        if (imgUrl) {
+          console.log("[editActivity] Would delete image at:", imgUrl);
+          // No file system deletion, just log the DB url for debugging
+        }
+      }
+      // Only update DB if the image is new, otherwise keep the preexisting url
       await client.query(`DELETE FROM activity_image WHERE activity_id = $1;`, [activityId]);
       const imageQueries = fields.images.map((imageUrl) => {
+        // If the imageUrl exists in currentImages, use the original DB value (preexisting url)
+        const original = currentImages.find((img) => img === imageUrl);
+        const toInsert = original || imageUrl;
         return client.query(
           `INSERT INTO activity_image (activity_id, image_url)
            VALUES ($1, $2);`,
-          [activityId, imageUrl]
+          [activityId, toInsert]
         );
       });
       await Promise.all(imageQueries);
