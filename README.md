@@ -165,6 +165,12 @@ Contributions are welcome! Please fork the repository and submit a pull request.
 
 ## Version History
 
+### v1.0.8 (2025-06-30)
+
+- Improved activity editing to update only changed fields, including robust image update, deletion, and addition logic (database and server filesystem).
+- Implemented full activity deletion, with cascading removal of images from both the database and server filesystem.
+- Enhanced API endpoints and backend logic for activity and image management.
+
 ### v1.0.7 (2025-06-19)
 
 - Added `/activities/leave` endpoint: Users can now leave/unlike an activity, which removes them from the group chat, deletes direct chats if there are no other shared activities, and cleans up all related swipe records and messages.
