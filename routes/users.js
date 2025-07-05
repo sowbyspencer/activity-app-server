@@ -62,16 +62,23 @@ router.put("/:id", upload.single("profileImage"), async (req, res) => {
   });
 
   try {
-    const oldImagePath = await getUserProfileImage(id);
-    if (!oldImagePath) {
+    // Check if user exists
+    const userProfile = await getUserProfile(id);
+    if (!userProfile) {
       console.error("User not found:", id);
       return res.status(404).json({ error: "User not found" });
     }
-    if (profileImage && oldImagePath && oldImagePath.startsWith(process.env.IMAGE_PATH)) {
-      const localPath = path.join(__dirname, "../public/images/users", path.basename(oldImagePath));
-      fs.unlink(localPath, (err) => {
-        if (err) console.error("Error deleting old profile image:", err.message);
-      });
+    // Get old image path (may be null)
+    const oldImagePath = userProfile.profileImage;
+    if (profileImage) {
+      if (oldImagePath && typeof oldImagePath === "string" && oldImagePath.startsWith(process.env.IMAGE_PATH)) {
+        const localPath = path.join(__dirname, "../public/images/users", path.basename(oldImagePath));
+        fs.unlink(localPath, (err) => {
+          if (err) console.error("Error deleting old profile image:", err.message);
+        });
+      } else {
+        console.warn("Previous profile image path was NULL or not a string, skipping delete.");
+      }
     }
     const updatedProfile = await updateUserProfile(id, firstName, lastName, email, profileImage);
     if (!updatedProfile) {
