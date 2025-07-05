@@ -12,18 +12,42 @@ This is the backend server for the Activity App, a platform for users to discove
 ## Project Structure
 
 ```
-.
+activity-app-server/
 ├── .env                  # Environment variables
 ├── .env.example          # Example environment variables
+├── .git/                 # Git repository data
+├── .gitignore            # Git ignore file
+├── 20250628 Backup/      # Backup of data/scripts (date-stamped)
+├── certs/                # (Empty) Directory for SSL certificates or related files
 ├── db.ts                 # Database connection setup
+├── docs/                 # (Empty) Documentation directory
 ├── index.js              # Main server entry point
+├── just_data_as_inserts.sql # SQL script for data inserts
+├── local_data.sql        # Local sample data
+├── middleware/           # Middleware functions (e.g., auth.js)
+│   └── auth.js
+├── migrations/           # (Empty) Directory for DB migrations
 ├── package.json          # Project dependencies and scripts
+├── package-lock.json     # NPM lockfile
 ├── populate_sample_data.SQL # SQL script to populate sample data
-├── schema.SQL            # Database schema definition
+├── populate_sample_data_with_activities.SQL # SQL script for sample data with activities
 ├── public/               # Static files (images)
+│   └── images/
 ├── queries/              # Database query logic
+│   ├── activities.js
+│   ├── activityGroup.js
+│   ├── auth.js
+│   ├── chat.js
+│   ├── groups.js
+│   └── users.js
 ├── routes/               # API route handlers
-└── .gitignore            # Git ignore file
+│   ├── activities.js
+│   ├── activityGroup.js
+│   ├── auth.js
+│   ├── chat.js
+│   ├── groups.js
+│   └── users.js
+├── README.md             # Project documentation
 ```
 
 ## Prerequisites
@@ -138,17 +162,21 @@ Sample data is provided in `populate_sample_data.SQL` to help you get started qu
 
   ```json
   {
-    "username": "string",
+    "email": "string",
     "password": "string",
-    "email": "string"
+    "first_name": "string",
+    "last_name": "string",
+    "profile_image": "string (image URI or base64)"
   }
   ```
+
+  > **Note:** `profile_image` is now required. The backend will reject registration requests without a valid image.
 
 - **POST /login**: Authenticate a user and return a JWT.  
   **Request Body**:
   ```json
   {
-    "username": "string",
+    "email": "string",
     "password": "string"
   }
   ```
@@ -165,13 +193,22 @@ Contributions are welcome! Please fork the repository and submit a pull request.
 
 ## Version History
 
-### v1.0.8 (2025-06-30)
+### v1.0.10 (July 5, 2025)
+
+- Enforced profile image validation for user registration; registration now requires a valid image (see `/register` endpoint docs).
+- Improved backend logic for robust image management: profile and activity images are now handled more reliably, including deletion and update flows.
+- Enhanced activity editing and deletion: only changed fields are updated, and images are properly managed in both the database and filesystem.
+- Added/updated endpoints and logic for declined activity refresh, group membership, and cascading deletions.
+- Updated documentation and work plan to reflect new user testing workflow, EAS Build/OTA steps, and detailed QA process.
+- General bugfixes, improved error handling, and backend polish in preparation for user testing and demo.
+
+### v1.0.8 (June 30, 2025)
 
 - Improved activity editing to update only changed fields, including robust image update, deletion, and addition logic (database and server filesystem).
 - Implemented full activity deletion, with cascading removal of images from both the database and server filesystem.
 - Enhanced API endpoints and backend logic for activity and image management.
 
-### v1.0.7 (2025-06-19)
+### v1.0.7 (June 19, 2025)
 
 - Added `/activities/leave` endpoint: Users can now leave/unlike an activity, which removes them from the group chat, deletes direct chats if there are no other shared activities, and cleans up all related swipe records and messages.
 - Improved backend cleanup logic for group and chat membership, swipes, and messages when a user leaves an activity.
@@ -179,7 +216,7 @@ Contributions are welcome! Please fork the repository and submit a pull request.
 - Improved user account deletion: Deleting a user now also removes all their related data from the following tables: `swipe` (liked/declined activities), `activity_member` (activity group memberships), `chat_member` (chat memberships), `message` (all sent messages), and all direct/group chats where the user was the only member.
 - Enhanced data integrity and privacy by ensuring no orphaned references remain after user deletion.
 
-### v1.0.6 (2025-06-11)
+### v1.0.6 (June 11, 2025)
 
 - Implemented POST /activities/swipe endpoint for recording swipes (like/dislike) and updating group membership.
 - Added POST /activities/reset-swipes endpoint to allow users to refresh declined activities.
@@ -187,13 +224,13 @@ Contributions are welcome! Please fork the repository and submit a pull request.
 - Improved error handling and documentation for new endpoints.
 - **Updated:** The `/activities/swipe` endpoint now returns a detailed JSON response including the swipe record, whether the user was added to `activity_member`, and a list of direct chats created or found (with user IDs and chat IDs). This provides full transparency of all backend actions performed for each swipe.
 
-### v1.0.5 (2025-06-04)
+### v1.0.5 (June 04, 2025)
 
 - Refactored `queries/activities.js` for improved clarity and maintainability.
 - Added `getUnswipedActivities(userId)` to fetch activities a user has not swiped on, including images and all activity details.
 - Ensured both activity queries return images as arrays using `json_agg`.
 
-### v1.0.4 (2025-05-28)
+### v1.0.4 (May 28, 2025)
 
 - Added endpoint to delete user accounts with password validation (`POST /users/:id/delete`).
 - Improved user password update logic (`PUT /users/:id/password`).
