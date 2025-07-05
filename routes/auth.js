@@ -4,14 +4,15 @@ const { registerUser, loginUser, getAllRegisteredUsers } = require("../queries/a
 
 // Update the /register route to include user-friendly error responses
 router.post("/register", async (req, res) => {
-  const { email, password, first_name, last_name } = req.body;
+  const { email, password, first_name, last_name, profile_image } = req.body;
   console.log("[REGISTER] Request received with data:", {
     email,
     first_name,
     last_name,
+    profile_image,
   });
   try {
-    const result = await registerUser({ email, password, first_name, last_name });
+    const result = await registerUser({ email, password, first_name, last_name, profile_image });
     if (result.error) {
       return res.status(400).json({ error: result.error });
     }

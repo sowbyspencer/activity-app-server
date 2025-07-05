@@ -3,18 +3,19 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 
 // Register a new user
-const registerUser = async ({ email, password, first_name, last_name }) => {
+const registerUser = async ({ email, password, first_name, last_name, profile_image }) => {
   // Check if the email already exists
   const emailCheck = await pool.query(`SELECT * FROM "user" WHERE email = $1`, [email]);
   if (emailCheck.rows.length > 0) {
     return { error: "The email address is already registered. Please use a different email." };
   }
   const hashedPassword = await bcrypt.hash(password, 10);
-  await pool.query(`INSERT INTO "user" (email, password, first_name, last_name) VALUES ($1, $2, $3, $4)`, [
+  await pool.query(`INSERT INTO "user" (email, password, first_name, last_name, profile_image) VALUES ($1, $2, $3, $4, $5)`, [
     email,
     hashedPassword,
     first_name,
     last_name,
+    profile_image || null,
   ]);
   return { message: "Registration successful! You can now log in." };
 };
