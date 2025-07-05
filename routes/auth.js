@@ -11,6 +11,9 @@ router.post("/register", async (req, res) => {
     last_name,
     profile_image,
   });
+  if (!profile_image) {
+    return res.status(400).json({ error: "Profile image is required." });
+  }
   try {
     const result = await registerUser({ email, password, first_name, last_name, profile_image });
     if (result.error) {

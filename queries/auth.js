@@ -4,6 +4,9 @@ const jwt = require("jsonwebtoken");
 
 // Register a new user
 const registerUser = async ({ email, password, first_name, last_name, profile_image }) => {
+  if (!profile_image) {
+    return { error: "Profile image is required." };
+  }
   // Check if the email already exists
   const emailCheck = await pool.query(`SELECT * FROM "user" WHERE email = $1`, [email]);
   if (emailCheck.rows.length > 0) {
