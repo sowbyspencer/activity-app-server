@@ -235,3 +235,9 @@ Contributions are welcome! Please fork the repository and submit a pull request.
 - Added endpoint to delete user accounts with password validation (`POST /users/:id/delete`).
 - Improved user password update logic (`PUT /users/:id/password`).
 - Enhanced error handling for user-related routes.
+
+### 2025-07-12
+
+- Standardized all console logging across routes and queries to use colored output with chalk: white for actions started, green for success, red for errors, and yellow for warnings.
+- Improved log clarity and visibility for backend actions, validation, and error handling.
+- Updated user and activity routes to use colorized logs for profile updates, activity creation, editing, and deletion.
