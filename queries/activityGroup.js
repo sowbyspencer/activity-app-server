@@ -1,4 +1,8 @@
 const pool = require("../db.ts");
+let chalk;
+(async () => {
+  chalk = (await import("chalk")).default;
+})();
 
 // Get activity group details including members and last message
 const getActivityGroup = async (activity_id, user_id) => {
@@ -96,7 +100,7 @@ GROUP BY
 
     return result.rows.length > 0 ? result.rows[0] : { error: "No group found for this activity." };
   } catch (err) {
-    console.error("Error fetching activity group:", err.message);
+    console.error(chalk.red("Error fetching activity group:"), err.message);
     return { error: "Database error while fetching activity group." };
   }
 };

@@ -1,4 +1,8 @@
 const pool = require("../db.ts");
+let chalk;
+(async () => {
+  chalk = (await import("chalk")).default;
+})();
 
 // Query to fetch user profile by ID
 const getUserProfile = async (id) => {
@@ -11,7 +15,7 @@ const getUserProfile = async (id) => {
     );
     return result.rows[0];
   } catch (err) {
-    console.error("Error fetching user profile:", err.message);
+    console.error(chalk.red("Error fetching user profile:"), err.message);
     throw err;
   }
 };
@@ -22,7 +26,7 @@ const updateUserPassword = async (id, newHashedPassword) => {
     await pool.query('UPDATE "user" SET password = $1 WHERE id = $2', [newHashedPassword, id]);
     return true;
   } catch (err) {
-    console.error("Error updating user password:", err.message);
+    console.error(chalk.red("Error updating user password:"), err.message);
     throw err;
   }
 };

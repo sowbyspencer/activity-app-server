@@ -1,4 +1,8 @@
 const pool = require("../db.ts");
+let chalk;
+(async () => {
+  chalk = (await import("chalk")).default;
+})();
 
 // ✅ Get all messages for a chat
 const getChatMessages = async (chat_id) => {
@@ -22,7 +26,7 @@ const getChatMessages = async (chat_id) => {
 
     return result.rows;
   } catch (err) {
-    console.error("Error fetching chat messages:", err.message);
+    console.error(chalk.red("Error fetching chat messages:"), err.message);
     return { error: "Database error while fetching chat messages." };
   }
 };
@@ -80,7 +84,7 @@ const getOrCreateChat = async ({ chat_type, activity_id, user_ids }) => {
     }
     return chat;
   } catch (err) {
-    console.error("Error fetching or creating chat:", err.message);
+    console.error(chalk.red("Error fetching or creating chat:"), err.message);
     return { error: "Database error while fetching or creating chat." };
   }
 };

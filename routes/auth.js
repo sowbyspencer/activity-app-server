@@ -1,11 +1,15 @@
 const express = require("express");
 const router = express.Router();
+let chalk;
+(async () => {
+  chalk = (await import("chalk")).default;
+})();
 const { registerUser, loginUser, getAllRegisteredUsers } = require("../queries/auth");
 
 // Update the /register route to include user-friendly error responses
 router.post("/register", async (req, res) => {
   const { email, password, first_name, last_name, profile_image } = req.body;
-  console.log("[REGISTER] Request received with data:", {
+  console.log(chalk.white("[REGISTER] Request received with data:"), {
     email,
     first_name,
     last_name,
@@ -21,7 +25,7 @@ router.post("/register", async (req, res) => {
     }
     res.status(201).json({ message: result.message });
   } catch (err) {
-    console.error("[REGISTER] Error registering user:", err.message);
+    console.error(chalk.red("[REGISTER] Error registering user:"), err.message);
     res.status(500).json({ error: "An unexpected error occurred. Please try again later." });
   }
 });
@@ -29,7 +33,7 @@ router.post("/register", async (req, res) => {
 // Add detailed logging to the /login route
 router.post("/login", async (req, res) => {
   const { email, password } = req.body;
-  console.log("[LOGIN] Request received with email:", email);
+  console.log(chalk.white("[LOGIN] Request received with email:"), email);
   try {
     const result = await loginUser({ email, password, jwtSecret: process.env.JWT_SECRET });
     if (result.error) {
@@ -37,20 +41,20 @@ router.post("/login", async (req, res) => {
     }
     res.json(result);
   } catch (err) {
-    console.error("[LOGIN] Error logging in user:", err.message);
+    console.error(chalk.red("[LOGIN] Error logging in user:"), err.message);
     res.status(500).json({ error: "Server error" });
   }
 });
 
 // Add detailed logging to the /verify-registration route
 router.get("/verify-registration", async (req, res) => {
-  console.log("[VERIFY-REGISTRATION] Request received");
+  console.log(chalk.white("[VERIFY-REGISTRATION] Request received"));
   try {
     const users = await getAllRegisteredUsers();
-    console.log("[VERIFY-REGISTRATION] Retrieved users from database:", users);
+    console.log(chalk.green("[VERIFY-REGISTRATION] Retrieved users from database:"), users);
     res.json(users);
   } catch (err) {
-    console.error("[VERIFY-REGISTRATION] Error verifying registration:", err.message);
+    console.error(chalk.red("[VERIFY-REGISTRATION] Error verifying registration:"), err.message);
     res.status(500).json({ error: "Server error" });
   }
 });

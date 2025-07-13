@@ -1,5 +1,9 @@
 const express = require("express");
 const router = express.Router();
+let chalk;
+(async () => {
+  chalk = (await import("chalk")).default;
+})();
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
@@ -40,11 +44,11 @@ router.get("/", async (req, res) => {
     return res.status(400).json({ error: "Missing required user_id query parameter." });
   }
   try {
-    console.log(`[ACTIVITIES] Fetching unmatched activities for user_id: ${userId}`);
+    console.log(chalk.white(`[ACTIVITIES] Fetching unmatched activities for user_id: ${userId}`));
     const activities = await getUnswipedActivities(userId);
     res.json(activities);
   } catch (err) {
-    console.error("[ACTIVITIES] Error fetching activities:", err.message);
+    console.error(chalk.red("[ACTIVITIES] Error fetching activities:"), err.message);
     res.status(500).json({ error: "Failed to fetch activities. Please try again later." });
   }
 });
@@ -124,10 +128,10 @@ router.post("/", upload.array("images"), async (req, res) => {
       ...parsedAvailability,
     });
 
-    console.log("[BACKEND] Activity created successfully:", result);
+    console.log(chalk.green("[BACKEND] Activity created successfully:"), result);
     res.status(201).json(result);
   } catch (err) {
-    console.error("[BACKEND] Error creating activity:", err.message);
+    console.error(chalk.red("[BACKEND] Error creating activity:"), err.message);
     res.status(400).json({ error: err.message });
   }
 });
@@ -147,7 +151,7 @@ router.post("/swipe", async (req, res) => {
       directChats: result.directChats,
     });
   } catch (err) {
-    console.error("[ACTIVITIES] Error recording swipe:", err.message);
+    console.error(chalk.red("[ACTIVITIES] Error recording swipe:"), err.message);
     res.status(500).json({ error: "Failed to record swipe. Please try again later." });
   }
 });
@@ -162,7 +166,7 @@ router.post("/reset-swipes", async (req, res) => {
     await resetSwipes(userId);
     res.status(200).json({ message: "Declined activities have been reset." });
   } catch (err) {
-    console.error("[ACTIVITIES] Error resetting swipes:", err.message);
+    console.error(chalk.red("[ACTIVITIES] Error resetting swipes:"), err.message);
     res.status(500).json({ error: "Failed to reset declined activities." });
   }
 });
@@ -177,7 +181,7 @@ router.post("/leave", async (req, res) => {
     const result = await leaveActivity(userId, activityId);
     res.status(200).json({ message: "Left activity successfully.", result });
   } catch (err) {
-    console.error("[ACTIVITIES] Error leaving activity:", err.message);
+    console.error(chalk.red("[ACTIVITIES] Error leaving activity:"), err.message);
     res.status(500).json({ error: "Failed to leave activity. Please try again later." });
   }
 });
@@ -191,10 +195,10 @@ router.get("/created", async (req, res) => {
   try {
     console.log(`[ACTIVITIES] Fetching activities created by user_id: ${userId}`);
     const activities = await getActivitiesByCreator(userId);
-    console.log("[BACKEND] Activities fetched for user:", userId);
+    console.log(chalk.green("[BACKEND] Activities fetched for user:"), userId);
     res.json(activities);
   } catch (err) {
-    console.error("[ACTIVITIES] Error fetching activities by creator:", err.message);
+    console.error(chalk.red("[ACTIVITIES] Error fetching activities by creator:"), err.message);
     res.status(500).json({ error: "Failed to fetch activities. Please try again later." });
   }
 });
@@ -260,10 +264,10 @@ router.put("/:id", upload.array("images"), async (req, res) => {
   try {
     console.log("[BACKEND] Editing activity with data:", updateFields);
     const result = await editActivity(updateFields);
-    console.log("[BACKEND] Activity edited successfully:", result);
+    console.log(chalk.green("[BACKEND] Activity edited successfully:"), result);
     res.status(200).json(result);
   } catch (err) {
-    console.error("[BACKEND] Error editing activity:", err.message);
+    console.error(chalk.red("[BACKEND] Error editing activity:"), err.message);
     res.status(400).json({ error: err.message });
   }
 });
@@ -275,7 +279,7 @@ router.delete("/:id", async (req, res) => {
     const result = await deleteActivity(activityId);
     res.status(200).json({ success: true });
   } catch (err) {
-    console.error("[BACKEND] Error deleting activity:", err.message);
+    console.error(chalk.red("[BACKEND] Error deleting activity:"), err.message);
     res.status(400).json({ error: err.message });
   }
 });

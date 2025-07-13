@@ -1,37 +1,46 @@
 const pool = require("../db.ts");
+let chalk;
+(async () => {
+  chalk = (await import("chalk")).default;
+})();
 const { getOrCreateChat } = require("./chat");
 const fs = require("fs");
 const path = require("path");
 
 // Get all activities
 const getAllActivities = async () => {
-  const result = await pool.query(`
-    SELECT 
-  a.id, 
-  a.name, 
-  a.description,
-  a.location, 
-  a.has_cost, 
-  a.cost, 
-  a.available_sun, 
-  a.available_mon, 
-  a.available_tue, 
-  a.available_wed, 
-  a.available_thu, 
-  a.available_fri, 
-  a.available_sat,
-  a.url,
-  COALESCE(json_agg(ai.image_url) FILTER (WHERE ai.image_url IS NOT NULL), '[]') AS images
-FROM activity a
-LEFT JOIN activity_image ai ON a.id = ai.activity_id
-GROUP BY 
-  a.id, a.name, a.description, a.location, a.has_cost, a.cost,
-  a.available_sun, a.available_mon, a.available_tue, a.available_wed,
-  a.available_thu, a.available_fri, a.available_sat, a.url
-ORDER BY a.id;
+  try {
+    const result = await pool.query(`
+      SELECT 
+    a.id, 
+    a.name, 
+    a.description,
+    a.location, 
+    a.has_cost, 
+    a.cost, 
+    a.available_sun, 
+    a.available_mon, 
+    a.available_tue, 
+    a.available_wed, 
+    a.available_thu, 
+    a.available_fri, 
+    a.available_sat,
+    a.url,
+    COALESCE(json_agg(ai.image_url) FILTER (WHERE ai.image_url IS NOT NULL), '[]') AS images
+  FROM activity a
+  LEFT JOIN activity_image ai ON a.id = ai.activity_id
+  GROUP BY 
+    a.id, a.name, a.description, a.location, a.has_cost, a.cost,
+    a.available_sun, a.available_mon, a.available_tue, a.available_wed,
+    a.available_thu, a.available_fri, a.available_sat, a.url
+  ORDER BY a.id;
 
-  `);
-  return result.rows;
+    `);
+    return result.rows;
+  } catch (err) {
+    console.error(chalk.red("Error fetching activities:"), err.message);
+    throw err;
+  }
 };
 
 // Get activities the user has NOT swiped on
@@ -402,7 +411,7 @@ const editActivity = async (fields) => {
               console.log("[editActivity] File not found for deletion:", localPath);
             }
           } catch (err) {
-            console.error("[editActivity] Error deleting image file:", localPath, err);
+            console.error(chalk.red("[editActivity] Error deleting image file:"), localPath, err);
           }
         }
       }
@@ -457,7 +466,7 @@ const deleteActivity = async (activityId) => {
           fs.unlinkSync(localPath);
         }
       } catch (err) {
-        console.error("[deleteActivity] Error deleting image file:", localPath, err);
+        console.error(chalk.red("[deleteActivity] Error deleting image file:"), localPath, err);
       }
     }
     // Delete from activity_image (if not ON DELETE CASCADE)

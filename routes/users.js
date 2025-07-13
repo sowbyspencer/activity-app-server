@@ -1,4 +1,9 @@
 const express = require("express");
+const router = express.Router();
+let chalk;
+(async () => {
+  chalk = (await import("chalk")).default;
+})();
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
@@ -13,8 +18,6 @@ const {
   deleteChatById,
 } = require("../queries/users");
 const pool = require("../db.ts");
-
-const router = express.Router();
 
 // Configure multer for image uploads
 const storage = multer.diskStorage({
@@ -31,18 +34,18 @@ const upload = multer({ storage });
 // Test URL: http://10.244.131.46:5000/users/:id (replace :id with the user ID)
 router.get("/:id", async (req, res) => {
   const { id } = req.params;
-  console.log("[USERS] Fetching user profile for id:", id);
+  console.log(chalk.white("[USERS] Fetching user profile for id:"), id);
 
   try {
     const userProfile = await getUserProfile(id);
     if (!userProfile) {
-      console.warn("[USERS] User not found for id:", id);
+      console.warn(chalk.red("[USERS] User not found for id:"), id);
       return res.status(404).json({ error: "User not found." });
     }
-    console.log("[USERS] Successfully fetched user profile for id:", id);
+    console.log(chalk.green("[USERS] Successfully fetched user profile for id:"), id);
     res.json(userProfile);
   } catch (err) {
-    console.error("[USERS] Error fetching user profile for id:", err.message);
+    console.error(chalk.red("[USERS] Error fetching user profile for id:"), err.message);
     res.status(500).json({ error: "Failed to fetch user profile. Please try again later." });
   }
 });
@@ -53,7 +56,7 @@ router.put("/:id", upload.single("profileImage"), async (req, res) => {
   const { firstName, lastName, email } = req.body;
   const profileImage = req.file ? `${process.env.IMAGE_PATH}/users/${req.file.filename}` : null;
 
-  console.log("[USERS] Received update request:", {
+  console.log(chalk.white("[USERS] Received update request:"), {
     id,
     firstName,
     lastName,
@@ -65,7 +68,7 @@ router.put("/:id", upload.single("profileImage"), async (req, res) => {
     // Check if user exists
     const userProfile = await getUserProfile(id);
     if (!userProfile) {
-      console.error("User not found:", id);
+      console.error(chalk.red("User not found:"), id);
       return res.status(404).json({ error: "User not found" });
     }
     // Get old image path (may be null)
@@ -74,21 +77,21 @@ router.put("/:id", upload.single("profileImage"), async (req, res) => {
       if (oldImagePath && typeof oldImagePath === "string" && oldImagePath.startsWith(process.env.IMAGE_PATH)) {
         const localPath = path.join(__dirname, "../public/images/users", path.basename(oldImagePath));
         fs.unlink(localPath, (err) => {
-          if (err) console.error("Error deleting old profile image:", err.message);
+          if (err) console.error(chalk.red("Error deleting old profile image:"), err.message);
         });
       } else {
-        console.warn("Previous profile image path was NULL or not a string, skipping delete.");
+        console.warn(chalk.yellow("Previous profile image path was NULL or not a string, skipping delete."));
       }
     }
     const updatedProfile = await updateUserProfile(id, firstName, lastName, email, profileImage);
     if (!updatedProfile) {
-      console.error("Failed to update user profile:", id);
+      console.error(chalk.red("Failed to update user profile:"), id);
       return res.status(404).json({ error: "User not found" });
     }
-    console.log("[USERS] User profile updated successfully:", updatedProfile);
+    console.log(chalk.green("[USERS] User profile updated successfully:"), updatedProfile);
     res.json(updatedProfile);
   } catch (err) {
-    console.error("Error updating user profile:", err.message);
+    console.error(chalk.red("Error updating user profile:"), err.message);
     res.status(500).json({ error: "Server error" });
   }
 });
@@ -114,7 +117,7 @@ router.put("/:id/password", async (req, res) => {
     await updateUserPassword(id, newHashedPassword);
     res.json({ message: "Password updated successfully." });
   } catch (err) {
-    console.error("[USERS] Error updating password:", err.message);
+    console.error(chalk.red("[USERS] Error updating password:"), err.message);
     res.status(500).json({ error: "Server error" });
   }
 });
@@ -149,7 +152,7 @@ router.post("/:id/delete", async (req, res) => {
     res.json({ message: "Account and related direct chats deleted successfully." });
   } catch (err) {
     await pool.query("ROLLBACK");
-    console.error("[USERS] Error deleting account:", err.message);
+    console.error(chalk.red("[USERS] Error deleting account:"), err.message);
     res.status(500).json({ error: "Server error" });
   }
 });

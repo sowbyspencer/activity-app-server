@@ -1,5 +1,9 @@
 const express = require("express");
 const router = express.Router();
+let chalk;
+(async () => {
+  chalk = (await import("chalk")).default;
+})();
 const { getChatMessages, getOrCreateChat, sendMessageToChat } = require("../queries/chat");
 
 // ✅ Get all messages for a chat
@@ -8,18 +12,18 @@ const { getChatMessages, getOrCreateChat, sendMessageToChat } = require("../quer
 // Add detailed logging and responses for errors in chat routes
 router.get("/:chat_id", async (req, res) => {
   const { chat_id } = req.params;
-  console.log("[CHAT] Fetching messages for chat_id:", chat_id);
+  console.log(chalk.white("[CHAT] Fetching messages for chat_id:"), chat_id);
 
   try {
     const messages = await getChatMessages(chat_id);
     if (messages.error) {
-      console.warn("[CHAT] No messages found for chat_id:", chat_id);
+      console.warn(chalk.red("[CHAT] No messages found for chat_id:"), chat_id);
       return res.status(404).json({ error: "No messages found for this chat." });
     }
-    console.log("[CHAT] Successfully fetched messages for chat_id:", chat_id);
+    console.log(chalk.green("[CHAT] Successfully fetched messages for chat_id:"), chat_id);
     res.json(messages);
   } catch (err) {
-    console.error("[CHAT] Error fetching messages for chat_id:", err.message);
+    console.error(chalk.red("[CHAT] Error fetching messages for chat_id:"), err.message);
     res.status(500).json({ error: "Failed to fetch messages. Please try again later." });
   }
 });
@@ -39,7 +43,7 @@ router.post("/create", async (req, res) => {
     }
     res.json(chat);
   } catch (err) {
-    console.error("[CHAT] Error creating or fetching chat:", err.message);
+    console.error(chalk.red("[CHAT] Error creating or fetching chat:"), err.message);
     res.status(500).json({ error: "Failed to create or fetch chat." });
   }
 });
@@ -65,7 +69,7 @@ router.post("/:chat_id", async (req, res) => {
     }
     res.json(result);
   } catch (err) {
-    console.error("[CHAT] Error sending message:", err.message);
+    console.error(chalk.red("[CHAT] Error sending message:"), err.message);
     res.status(500).json({ error: "Failed to send message. Please try again later." });
   }
 });
