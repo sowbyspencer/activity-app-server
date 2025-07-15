@@ -31,7 +31,7 @@ const getUnswipedActivities = async (userId, lat, lon, radius) => {
   }
   const query = `
     SELECT 
-      a.id, a.name, a.description, a.location, a.lat, a.lon, a.has_cost, a.cost,
+      a.id, a.name, a.description, a.lat, a.lon, a.has_cost, a.cost,
       a.available_sun, a.available_mon, a.available_tue, a.available_wed, a.available_thu, a.available_fri, a.available_sat,
       a.url,
       COALESCE(json_agg(ai.image_url) FILTER (WHERE ai.image_url IS NOT NULL), '[]') AS images,
@@ -59,7 +59,7 @@ const getUnswipedActivities = async (userId, lat, lon, radius) => {
         )
       )
     )
-    GROUP BY a.id, a.name, a.description, a.location, a.lat, a.lon, a.has_cost, a.cost,
+    GROUP BY a.id, a.name, a.description, a.lat, a.lon, a.has_cost, a.cost,
       a.available_sun, a.available_mon, a.available_tue, a.available_wed,
       a.available_thu, a.available_fri, a.available_sat, a.url
     ORDER BY a.id;
@@ -145,7 +145,6 @@ const resetSwipes = async (userId) => {
 // Create a new activity
 const createActivity = async ({
   name,
-  location,
   lat,
   lon,
   has_cost,
@@ -174,12 +173,11 @@ const createActivity = async ({
 
     // Insert activity
     const activityResult = await client.query(
-      `INSERT INTO activity (name, location, lat, lon, has_cost, cost, url, description, user_id, available_sun, available_mon, available_tue, available_wed, available_thu, available_fri, available_sat)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+      `INSERT INTO activity (name, lat, lon, has_cost, cost, url, description, user_id, available_sun, available_mon, available_tue, available_wed, available_thu, available_fri, available_sat)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
        RETURNING *;`,
       [
         name,
-        location,
         lat,
         lon,
         has_cost,
@@ -280,7 +278,6 @@ const getActivitiesByCreator = async (userId) => {
       a.id, 
       a.name, 
       a.description,
-      a.location, 
       a.lat, 
       a.lon, 
       a.has_cost, 
@@ -298,7 +295,7 @@ const getActivitiesByCreator = async (userId) => {
     LEFT JOIN activity_image ai ON a.id = ai.activity_id
     WHERE a.user_id = $1
     GROUP BY 
-      a.id, a.name, a.description, a.location, a.lat, a.lon, a.has_cost, a.cost,
+      a.id, a.name, a.description, a.lat, a.lon, a.has_cost, a.cost,
       a.available_sun, a.available_mon, a.available_tue, a.available_wed,
       a.available_thu, a.available_fri, a.available_sat, a.url
     ORDER BY a.id;
@@ -328,7 +325,6 @@ const editActivity = async (fields) => {
 
     // Merge fields: use provided value if present, else current value
     const name = fields.name !== undefined ? fields.name : current.name;
-    const location = fields.location !== undefined ? fields.location : current.location;
     const lat = fields.lat !== undefined ? fields.lat : current.lat;
     const lon = fields.lon !== undefined ? fields.lon : current.lon;
     const has_cost = fields.has_cost !== undefined ? fields.has_cost : current.has_cost;
@@ -354,13 +350,12 @@ const editActivity = async (fields) => {
     // Update activity
     const activityResult = await client.query(
       `UPDATE activity
-       SET name = $1, location = $2, lat = $3::DOUBLE PRECISION, lon = $4::DOUBLE PRECISION, has_cost = $5, cost = $6, url = $7, description = $8, user_id = $9,
-           available_sun = $10, available_mon = $11, available_tue = $12, available_wed = $13, available_thu = $14, available_fri = $15, available_sat = $16
-       WHERE id = $17
+       SET name = $1, lat = $2::DOUBLE PRECISION, lon = $3::DOUBLE PRECISION, has_cost = $4, cost = $5, url = $6, description = $7, user_id = $8,
+           available_sun = $9, available_mon = $10, available_tue = $11, available_wed = $12, available_thu = $13, available_fri = $14, available_sat = $15
+       WHERE id = $16
        RETURNING *;`,
       [
         name,
-        location,
         lat,
         lon,
         has_cost,

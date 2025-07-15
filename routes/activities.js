@@ -62,7 +62,6 @@ router.get("/", async (req, res) => {
 router.post("/", upload.array("images"), async (req, res) => {
   const {
     name,
-    location,
     lat,
     lon,
     has_cost,
@@ -97,14 +96,14 @@ router.post("/", upload.array("images"), async (req, res) => {
   // Validate request body
   if (
     !name ||
-    !location ||
+    // !location || // Removed: location is no longer required
     typeof parsedHasCost !== "boolean" ||
     isNaN(parsedUserId) ||
     Object.values(parsedAvailability).some((val) => typeof val !== "boolean")
   ) {
     console.log("[BACKEND] Validation failed for request body:", req.body);
     return res.status(400).json({
-      error: "Missing or invalid required fields: name, location, has_cost, user_id, availability fields.",
+      error: "Missing or invalid required fields: name, has_cost, user_id, availability fields.",
     });
   }
 
@@ -114,7 +113,7 @@ router.post("/", upload.array("images"), async (req, res) => {
 
     console.log("[BACKEND] Creating a new activity with data:", {
       name,
-      location,
+      // location, // Removed
       lat: parsedLat,
       lon: parsedLon,
       has_cost: parsedHasCost,
@@ -128,7 +127,7 @@ router.post("/", upload.array("images"), async (req, res) => {
 
     const result = await createActivity({
       name,
-      location,
+      // location, // Removed
       lat: parsedLat,
       lon: parsedLon,
       has_cost: parsedHasCost,
@@ -225,7 +224,7 @@ router.put("/:id", upload.array("images"), async (req, res) => {
   // List of fields to check
   const fieldList = [
     "name",
-    "location",
+    // "location", // Removed legacy location field
     "lat",
     "lon",
     "has_cost",
