@@ -8,12 +8,7 @@ const { getActivityGroup } = require("../queries/activityGroup");
 router.get("/:activity_id", async (req, res) => {
   const { activity_id } = req.params;
   const { user_id } = req.query;
-  console.log(
-    "[ACTIVITY GROUP] Fetching activity group for activity_id:",
-    activity_id,
-    "and user_id:",
-    user_id
-  );
+  console.log("[ACTIVITY GROUP] Fetching activity group for activity_id:", activity_id, "and user_id:", user_id);
 
   if (!user_id) {
     console.warn("[ACTIVITY GROUP] Missing user_id in request");
@@ -23,29 +18,16 @@ router.get("/:activity_id", async (req, res) => {
   try {
     const activityGroup = await getActivityGroup(activity_id, user_id);
     if (activityGroup.error) {
-      console.warn(
-        "[ACTIVITY GROUP] No group found for activity_id:",
-        activity_id
-      );
-      return res
-        .status(404)
-        .json({ error: "No group found for this activity." });
+      console.warn("[ACTIVITY GROUP] No group found for activity_id:", activity_id);
+      return res.status(404).json({ error: "No group found for this activity." });
     }
-    console.log(
-      "[ACTIVITY GROUP] Successfully fetched activity group for activity_id:",
-      activity_id
-    );
+    console.log("[ACTIVITY GROUP]  Fetched activity group for activity_id:", activity_id);
     res.json(activityGroup);
   } catch (err) {
-    console.error(
-      "[ACTIVITY GROUP] Error fetching activity group:",
-      err.message
-    );
-    res
-      .status(500)
-      .json({
-        error: "Failed to fetch activity group. Please try again later.",
-      });
+    console.error("[ACTIVITY GROUP] Error fetching activity group:", err.message);
+    res.status(500).json({
+      error: "Failed to fetch activity group. Please try again later.",
+    });
   }
 });
 

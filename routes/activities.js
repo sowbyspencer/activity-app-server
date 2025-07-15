@@ -46,6 +46,7 @@ router.get("/", async (req, res) => {
   try {
     console.log(chalk.white(`[ACTIVITIES] Fetching unmatched activities for user_id: ${userId}`));
     const activities = await getUnswipedActivities(userId);
+    console.log(chalk.green(`[ACTIVITIES]  Fetched unmatched activities for user_id: ${userId}`));
     res.json(activities);
   } catch (err) {
     console.error(chalk.red("[ACTIVITIES] Error fetching activities:"), err.message);

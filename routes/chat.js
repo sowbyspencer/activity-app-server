@@ -20,7 +20,7 @@ router.get("/:chat_id", async (req, res) => {
       console.warn(chalk.red("[CHAT] No messages found for chat_id:"), chat_id);
       return res.status(404).json({ error: "No messages found for this chat." });
     }
-    console.log(chalk.green("[CHAT] Successfully fetched messages for chat_id:"), chat_id);
+    console.log(chalk.green("[CHAT]  Fetched messages for chat_id:"), chat_id);
     res.json(messages);
   } catch (err) {
     console.error(chalk.red("[CHAT] Error fetching messages for chat_id:"), err.message);

@@ -42,7 +42,7 @@ router.get("/:id", async (req, res) => {
       console.warn(chalk.red("[USERS] User not found for id:"), id);
       return res.status(404).json({ error: "User not found." });
     }
-    console.log(chalk.green("[USERS] Successfully fetched user profile for id:"), id);
+    console.log(chalk.green("[USERS]  Fetched user profile for id:"), id);
     res.json(userProfile);
   } catch (err) {
     console.error(chalk.red("[USERS] Error fetching user profile for id:"), err.message);
