@@ -43,8 +43,8 @@ router.get("/", async (req, res) => {
   const lat = req.query.lat ? parseFloat(req.query.lat) : undefined;
   const lon = req.query.lon ? parseFloat(req.query.lon) : undefined;
   const radius = req.query.radius ? parseFloat(req.query.radius) : undefined;
-  if (!userId) {
-    return res.status(400).json({ error: "Missing required user_id query parameter." });
+  if (!userId || lat === undefined || lon === undefined) {
+    return res.status(400).json({ error: "Missing required user_id, lat, or lon query parameter." });
   }
   try {
     console.log(chalk.white(`[ACTIVITIES] Fetching unmatched activities for user_id: ${userId}, lat: ${lat}, lon: ${lon}, radius: ${radius}`));

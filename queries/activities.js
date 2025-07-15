@@ -47,40 +47,63 @@ const getAllActivities = async () => {
 
 // Get activities the user has NOT swiped on
 const getUnswipedActivities = async (userId, lat, lon, radius) => {
+  if (lat === undefined || lon === undefined) {
+    throw new Error("Latitude and longitude are required for location-based activity filtering.");
+  }
   console.log(`[QUERY] getUnswipedActivities called with: userId=${userId}, lat=${lat}, lon=${lon}, radius=${radius}`);
-  const result = await pool.query(
-    `
+  // If no location, try to use last known location from DB (if available)
+  let effectiveLat = lat;
+  let effectiveLon = lon;
+  if ((lat === undefined || lon === undefined) && userId) {
+    // Try to get last known location for user from profile (if stored)
+    try {
+      const userLocRes = await pool.query('SELECT lat, lon FROM "user" WHERE id = $1', [userId]);
+      if (userLocRes.rows.length > 0 && userLocRes.rows[0].lat && userLocRes.rows[0].lon) {
+        effectiveLat = userLocRes.rows[0].lat;
+        effectiveLon = userLocRes.rows[0].lon;
+        console.log(`[QUERY] Using last known user location from DB: lat=${effectiveLat}, lon=${effectiveLon}`);
+      }
+    } catch (e) {
+      console.log("[QUERY] Could not get last known user location:", e.message);
+    }
+  }
+  const query = `
     SELECT 
-      a.id, 
-      a.name, 
-      a.description,
-      a.location, 
-      a.lat, 
-      a.lon, 
-      a.has_cost, 
-      a.cost, 
-      a.available_sun, 
-      a.available_mon, 
-      a.available_tue, 
-      a.available_wed, 
-      a.available_thu, 
-      a.available_fri, 
-      a.available_sat,
+      a.id, a.name, a.description, a.location, a.lat, a.lon, a.has_cost, a.cost,
+      a.available_sun, a.available_mon, a.available_tue, a.available_wed, a.available_thu, a.available_fri, a.available_sat,
       a.url,
-      COALESCE(json_agg(ai.image_url) FILTER (WHERE ai.image_url IS NOT NULL), '[]') AS images
+      COALESCE(json_agg(ai.image_url) FILTER (WHERE ai.image_url IS NOT NULL), '[]') AS images,
+      CASE WHEN $2::DOUBLE PRECISION IS NOT NULL AND $3::DOUBLE PRECISION IS NOT NULL THEN (
+        6371 * acos(
+          cos(radians($2::DOUBLE PRECISION)) * cos(radians(a.lat)) *
+          cos(radians(a.lon) - radians($3::DOUBLE PRECISION)) +
+          sin(radians($2::DOUBLE PRECISION)) * sin(radians(a.lat))
+        )
+      ) ELSE NULL END AS distance
     FROM activity a
     LEFT JOIN activity_image ai ON a.id = ai.activity_id
     WHERE a.id NOT IN (
       SELECT activity_id FROM swipe WHERE user_id = $1
     )
-    GROUP BY 
-      a.id, a.name, a.description, a.location, a.lat, a.lon, a.has_cost, a.cost,
+    AND (
+      $2::DOUBLE PRECISION IS NULL OR $3::DOUBLE PRECISION IS NULL OR $4::DOUBLE PRECISION IS NULL OR (
+        a.lat IS NOT NULL AND a.lon IS NOT NULL AND
+        (
+          6371 * acos(
+            cos(radians($2::DOUBLE PRECISION)) * cos(radians(a.lat)) *
+            cos(radians(a.lon) - radians($3::DOUBLE PRECISION)) +
+            sin(radians($2::DOUBLE PRECISION)) * sin(radians(a.lat))
+          ) <= $4::DOUBLE PRECISION
+        )
+      )
+    )
+    GROUP BY a.id, a.name, a.description, a.location, a.lat, a.lon, a.has_cost, a.cost,
       a.available_sun, a.available_mon, a.available_tue, a.available_wed,
       a.available_thu, a.available_fri, a.available_sat, a.url
     ORDER BY a.id;
-    `,
-    [userId]
-  );
+  `;
+  const params = [userId, effectiveLat, effectiveLon, radius];
+  const result = await pool.query(query, params);
   return result.rows;
 };
 
@@ -369,7 +392,7 @@ const editActivity = async (fields) => {
     // Update activity
     const activityResult = await client.query(
       `UPDATE activity
-       SET name = $1, location = $2, lat = $3, lon = $4, has_cost = $5, cost = $6, url = $7, description = $8, user_id = $9,
+       SET name = $1, location = $2, lat = $3::DOUBLE PRECISION, lon = $4::DOUBLE PRECISION, has_cost = $5, cost = $6, url = $7, description = $8, user_id = $9,
            available_sun = $10, available_mon = $11, available_tue = $12, available_wed = $13, available_thu = $14, available_fri = $15, available_sat = $16
        WHERE id = $17
        RETURNING *;`,
