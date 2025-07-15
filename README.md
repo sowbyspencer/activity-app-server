@@ -185,6 +185,13 @@ Sample data is provided in `populate_sample_data.SQL` to help you get started qu
 
 Static images are served from the `public` directory. Access them via the `IMAGE_PATH` defined in your `.env` file.
 
+## Location-Based Filtering
+
+- Activities are filtered by latitude, longitude, and user-selected radius using the Haversine formula in SQL.
+- The legacy `location` string field is deprecated and will be removed from the database and API.
+- All endpoints for activity creation, editing, and discovery require lat/lon.
+- Planned: Map/address picker and geocoding integration for frontend.
+
 ## Contributing
 
 Contributions are welcome! Please fork the repository and submit a pull request.
