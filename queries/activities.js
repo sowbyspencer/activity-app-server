@@ -7,44 +7,6 @@ const { getOrCreateChat } = require("./chat");
 const fs = require("fs");
 const path = require("path");
 
-// Get all activities
-const getAllActivities = async () => {
-  try {
-    const result = await pool.query(`
-      SELECT 
-    a.id, 
-    a.name, 
-    a.description,
-    a.location, 
-    a.lat, 
-    a.lon, 
-    a.has_cost, 
-    a.cost, 
-    a.available_sun, 
-    a.available_mon, 
-    a.available_tue, 
-    a.available_wed, 
-    a.available_thu, 
-    a.available_fri, 
-    a.available_sat,
-    a.url,
-    COALESCE(json_agg(ai.image_url) FILTER (WHERE ai.image_url IS NOT NULL), '[]') AS images
-  FROM activity a
-  LEFT JOIN activity_image ai ON a.id = ai.activity_id
-  GROUP BY 
-    a.id, a.name, a.description, a.location, a.lat, a.lon, a.has_cost, a.cost,
-    a.available_sun, a.available_mon, a.available_tue, a.available_wed,
-    a.available_thu, a.available_fri, a.available_sat, a.url
-  ORDER BY a.id;
-
-    `);
-    return result.rows;
-  } catch (err) {
-    console.error(chalk.red("Error fetching activities:"), err.message);
-    throw err;
-  }
-};
-
 // Get activities the user has NOT swiped on
 const getUnswipedActivities = async (userId, lat, lon, radius) => {
   if (lat === undefined || lon === undefined) {
@@ -521,7 +483,6 @@ const deleteActivity = async (activityId) => {
 };
 
 module.exports = {
-  getAllActivities,
   getUnswipedActivities,
   recordSwipe,
   resetSwipes,
