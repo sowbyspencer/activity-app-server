@@ -16,6 +16,8 @@ const getAllActivities = async () => {
     a.name, 
     a.description,
     a.location, 
+    a.lat, 
+    a.lon, 
     a.has_cost, 
     a.cost, 
     a.available_sun, 
@@ -30,7 +32,7 @@ const getAllActivities = async () => {
   FROM activity a
   LEFT JOIN activity_image ai ON a.id = ai.activity_id
   GROUP BY 
-    a.id, a.name, a.description, a.location, a.has_cost, a.cost,
+    a.id, a.name, a.description, a.location, a.lat, a.lon, a.has_cost, a.cost,
     a.available_sun, a.available_mon, a.available_tue, a.available_wed,
     a.available_thu, a.available_fri, a.available_sat, a.url
   ORDER BY a.id;
@@ -52,6 +54,8 @@ const getUnswipedActivities = async (userId) => {
       a.name, 
       a.description,
       a.location, 
+      a.lat, 
+      a.lon, 
       a.has_cost, 
       a.cost, 
       a.available_sun, 
@@ -69,7 +73,7 @@ const getUnswipedActivities = async (userId) => {
       SELECT activity_id FROM swipe WHERE user_id = $1
     )
     GROUP BY 
-      a.id, a.name, a.description, a.location, a.has_cost, a.cost,
+      a.id, a.name, a.description, a.location, a.lat, a.lon, a.has_cost, a.cost,
       a.available_sun, a.available_mon, a.available_tue, a.available_wed,
       a.available_thu, a.available_fri, a.available_sat, a.url
     ORDER BY a.id;
@@ -156,6 +160,8 @@ const resetSwipes = async (userId) => {
 const createActivity = async ({
   name,
   location,
+  lat,
+  lon,
   has_cost,
   cost,
   url,
@@ -182,12 +188,14 @@ const createActivity = async ({
 
     // Insert activity
     const activityResult = await client.query(
-      `INSERT INTO activity (name, location, has_cost, cost, url, description, user_id, available_sun, available_mon, available_tue, available_wed, available_thu, available_fri, available_sat)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+      `INSERT INTO activity (name, location, lat, lon, has_cost, cost, url, description, user_id, available_sun, available_mon, available_tue, available_wed, available_thu, available_fri, available_sat)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
        RETURNING *;`,
       [
         name,
         location,
+        lat,
+        lon,
         has_cost,
         validatedCost,
         url,
@@ -287,6 +295,8 @@ const getActivitiesByCreator = async (userId) => {
       a.name, 
       a.description,
       a.location, 
+      a.lat, 
+      a.lon, 
       a.has_cost, 
       a.cost, 
       a.available_sun, 
@@ -302,7 +312,7 @@ const getActivitiesByCreator = async (userId) => {
     LEFT JOIN activity_image ai ON a.id = ai.activity_id
     WHERE a.user_id = $1
     GROUP BY 
-      a.id, a.name, a.description, a.location, a.has_cost, a.cost,
+      a.id, a.name, a.description, a.location, a.lat, a.lon, a.has_cost, a.cost,
       a.available_sun, a.available_mon, a.available_tue, a.available_wed,
       a.available_thu, a.available_fri, a.available_sat, a.url
     ORDER BY a.id;
@@ -333,6 +343,8 @@ const editActivity = async (fields) => {
     // Merge fields: use provided value if present, else current value
     const name = fields.name !== undefined ? fields.name : current.name;
     const location = fields.location !== undefined ? fields.location : current.location;
+    const lat = fields.lat !== undefined ? fields.lat : current.lat;
+    const lon = fields.lon !== undefined ? fields.lon : current.lon;
     const has_cost = fields.has_cost !== undefined ? fields.has_cost : current.has_cost;
     let cost = fields.cost !== undefined ? fields.cost : current.cost;
     const url = fields.url !== undefined ? fields.url : current.url;
@@ -356,14 +368,15 @@ const editActivity = async (fields) => {
     // Update activity
     const activityResult = await client.query(
       `UPDATE activity
-       SET name = $1, location = $2, has_cost = $3, cost = $4, url = $5, description = $6, user_id = $7,
-           available_sun = $8, available_mon = $9, available_tue = $10, available_wed = $11,
-           available_thu = $12, available_fri = $13, available_sat = $14
-       WHERE id = $15
+       SET name = $1, location = $2, lat = $3, lon = $4, has_cost = $5, cost = $6, url = $7, description = $8, user_id = $9,
+           available_sun = $10, available_mon = $11, available_tue = $12, available_wed = $13, available_thu = $14, available_fri = $15, available_sat = $16
+       WHERE id = $17
        RETURNING *;`,
       [
         name,
         location,
+        lat,
+        lon,
         has_cost,
         cost,
         url,

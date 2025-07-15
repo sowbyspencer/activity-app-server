@@ -60,6 +60,8 @@ router.post("/", upload.array("images"), async (req, res) => {
   const {
     name,
     location,
+    lat,
+    lon,
     has_cost,
     cost,
     url,
@@ -77,6 +79,8 @@ router.post("/", upload.array("images"), async (req, res) => {
   // Convert types
   const parsedHasCost = has_cost === "true";
   const parsedUserId = parseInt(user_id, 10);
+  const parsedLat = lat !== undefined && lat !== null && lat !== "" ? parseFloat(lat) : null;
+  const parsedLon = lon !== undefined && lon !== null && lon !== "" ? parseFloat(lon) : null;
   const parsedAvailability = {
     available_sun: available_sun === "true",
     available_mon: available_mon === "true",
@@ -108,6 +112,8 @@ router.post("/", upload.array("images"), async (req, res) => {
     console.log("[BACKEND] Creating a new activity with data:", {
       name,
       location,
+      lat: parsedLat,
+      lon: parsedLon,
       has_cost: parsedHasCost,
       cost,
       url,
@@ -120,6 +126,8 @@ router.post("/", upload.array("images"), async (req, res) => {
     const result = await createActivity({
       name,
       location,
+      lat: parsedLat,
+      lon: parsedLon,
       has_cost: parsedHasCost,
       cost,
       url,
@@ -215,6 +223,8 @@ router.put("/:id", upload.array("images"), async (req, res) => {
   const fieldList = [
     "name",
     "location",
+    "lat",
+    "lon",
     "has_cost",
     "cost",
     "url",
@@ -240,6 +250,8 @@ router.put("/:id", upload.array("images"), async (req, res) => {
         updateFields[field] = body[field] === "true";
       } else if (field === "user_id") {
         updateFields[field] = parseInt(body[field], 10);
+      } else if (field === "lat" || field === "lon") {
+        updateFields[field] = body[field] !== undefined && body[field] !== null && body[field] !== "" ? parseFloat(body[field]) : null;
       } else {
         updateFields[field] = body[field];
       }
