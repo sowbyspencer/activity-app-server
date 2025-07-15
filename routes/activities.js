@@ -40,12 +40,15 @@ function getFullImageUrl(req, filename) {
 // Test URL: http://10.244.131.46:5000/activities?user_id=1
 router.get("/", async (req, res) => {
   const userId = req.query.user_id;
+  const lat = req.query.lat ? parseFloat(req.query.lat) : undefined;
+  const lon = req.query.lon ? parseFloat(req.query.lon) : undefined;
+  const radius = req.query.radius ? parseFloat(req.query.radius) : undefined;
   if (!userId) {
     return res.status(400).json({ error: "Missing required user_id query parameter." });
   }
   try {
-    console.log(chalk.white(`[ACTIVITIES] Fetching unmatched activities for user_id: ${userId}`));
-    const activities = await getUnswipedActivities(userId);
+    console.log(chalk.white(`[ACTIVITIES] Fetching unmatched activities for user_id: ${userId}, lat: ${lat}, lon: ${lon}, radius: ${radius}`));
+    const activities = await getUnswipedActivities(userId, lat, lon, radius);
     console.log(chalk.green(`[ACTIVITIES]  Fetched unmatched activities for user_id: ${userId}`));
     res.json(activities);
   } catch (err) {

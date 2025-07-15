@@ -46,7 +46,8 @@ const getAllActivities = async () => {
 };
 
 // Get activities the user has NOT swiped on
-const getUnswipedActivities = async (userId) => {
+const getUnswipedActivities = async (userId, lat, lon, radius) => {
+  console.log(`[QUERY] getUnswipedActivities called with: userId=${userId}, lat=${lat}, lon=${lon}, radius=${radius}`);
   const result = await pool.query(
     `
     SELECT 
@@ -77,7 +78,7 @@ const getUnswipedActivities = async (userId) => {
       a.available_sun, a.available_mon, a.available_tue, a.available_wed,
       a.available_thu, a.available_fri, a.available_sat, a.url
     ORDER BY a.id;
-  `,
+    `,
     [userId]
   );
   return result.rows;
