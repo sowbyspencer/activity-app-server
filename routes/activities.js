@@ -76,6 +76,7 @@ router.post("/", upload.array("images"), async (req, res) => {
     available_thu,
     available_fri,
     available_sat,
+    address,
   } = req.body;
 
   // Convert types
@@ -123,6 +124,7 @@ router.post("/", upload.array("images"), async (req, res) => {
       user_id: parsedUserId,
       images: imagePaths,
       ...parsedAvailability,
+      address,
     });
 
     const result = await createActivity({
@@ -137,6 +139,7 @@ router.post("/", upload.array("images"), async (req, res) => {
       user_id: parsedUserId,
       images: imagePaths,
       ...parsedAvailability,
+      address,
     });
 
     console.log(chalk.green("[BACKEND] Activity created successfully:"), result);
@@ -239,6 +242,7 @@ router.put("/:id", upload.array("images"), async (req, res) => {
     "available_thu",
     "available_fri",
     "available_sat",
+    "address",
   ];
 
   for (const field of fieldList) {

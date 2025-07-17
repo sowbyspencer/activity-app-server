@@ -34,6 +34,7 @@ const getUnswipedActivities = async (userId, lat, lon, radius) => {
       a.id, a.name, a.description, a.lat, a.lon, a.has_cost, a.cost,
       a.available_sun, a.available_mon, a.available_tue, a.available_wed, a.available_thu, a.available_fri, a.available_sat,
       a.url,
+      a.address,
       COALESCE(json_agg(ai.image_url) FILTER (WHERE ai.image_url IS NOT NULL), '[]') AS images,
       CASE WHEN $2::DOUBLE PRECISION IS NOT NULL AND $3::DOUBLE PRECISION IS NOT NULL THEN (
         6371 * acos(
@@ -61,7 +62,7 @@ const getUnswipedActivities = async (userId, lat, lon, radius) => {
     )
     GROUP BY a.id, a.name, a.description, a.lat, a.lon, a.has_cost, a.cost,
       a.available_sun, a.available_mon, a.available_tue, a.available_wed,
-      a.available_thu, a.available_fri, a.available_sat, a.url
+      a.available_thu, a.available_fri, a.available_sat, a.url, a.address
     ORDER BY a.id;
   `;
   const params = [userId, effectiveLat, effectiveLon, radius];
@@ -160,6 +161,7 @@ const createActivity = async ({
   available_thu,
   available_fri,
   available_sat,
+  address,
 }) => {
   // Validate cost field
   const validatedCost = cost === "" || cost === null ? null : parseFloat(cost);
@@ -173,8 +175,8 @@ const createActivity = async ({
 
     // Insert activity
     const activityResult = await client.query(
-      `INSERT INTO activity (name, lat, lon, has_cost, cost, url, description, user_id, available_sun, available_mon, available_tue, available_wed, available_thu, available_fri, available_sat)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+      `INSERT INTO activity (name, lat, lon, has_cost, cost, url, description, user_id, available_sun, available_mon, available_tue, available_wed, available_thu, available_fri, available_sat, address)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
        RETURNING *;`,
       [
         name,
@@ -192,6 +194,7 @@ const createActivity = async ({
         available_thu,
         available_fri,
         available_sat,
+        address,
       ]
     );
 
@@ -290,6 +293,7 @@ const getActivitiesByCreator = async (userId) => {
       a.available_fri, 
       a.available_sat,
       a.url,
+      a.address,
       COALESCE(json_agg(ai.image_url) FILTER (WHERE ai.image_url IS NOT NULL), '[]') AS images
     FROM activity a
     LEFT JOIN activity_image ai ON a.id = ai.activity_id
@@ -297,9 +301,9 @@ const getActivitiesByCreator = async (userId) => {
     GROUP BY 
       a.id, a.name, a.description, a.lat, a.lon, a.has_cost, a.cost,
       a.available_sun, a.available_mon, a.available_tue, a.available_wed,
-      a.available_thu, a.available_fri, a.available_sat, a.url
+      a.available_thu, a.available_fri, a.available_sat, a.url, a.address
     ORDER BY a.id;
-    `,
+  `,
     [userId]
   );
   return result.rows;
@@ -339,6 +343,7 @@ const editActivity = async (fields) => {
     const available_thu = fields.available_thu !== undefined ? fields.available_thu : current.available_thu;
     const available_fri = fields.available_fri !== undefined ? fields.available_fri : current.available_fri;
     const available_sat = fields.available_sat !== undefined ? fields.available_sat : current.available_sat;
+    const address = fields.address !== undefined ? fields.address : current.address;
 
     // Validate cost
     if (cost === "" || cost === null) cost = null;
@@ -351,8 +356,8 @@ const editActivity = async (fields) => {
     const activityResult = await client.query(
       `UPDATE activity
        SET name = $1, lat = $2::DOUBLE PRECISION, lon = $3::DOUBLE PRECISION, has_cost = $4, cost = $5, url = $6, description = $7, user_id = $8,
-           available_sun = $9, available_mon = $10, available_tue = $11, available_wed = $12, available_thu = $13, available_fri = $14, available_sat = $15
-       WHERE id = $16
+           available_sun = $9, available_mon = $10, available_tue = $11, available_wed = $12, available_thu = $13, available_fri = $14, available_sat = $15, address = $16
+       WHERE id = $17
        RETURNING *;`,
       [
         name,
@@ -370,6 +375,7 @@ const editActivity = async (fields) => {
         available_thu,
         available_fri,
         available_sat,
+        address,
         id,
       ]
     );
