@@ -190,7 +190,9 @@ Static images are served from the `public` directory. Access them via the `IMAGE
 - Activities are filtered by latitude, longitude, and user-selected radius using the Haversine formula in SQL.
 - The legacy `location` string field is deprecated and will be removed from the database and API.
 - All endpoints for activity creation, editing, and discovery require lat/lon.
-- Planned: Map/address picker and geocoding integration for frontend.
+- The address field in ActivityForm is now fully controlled and requires GIS validation for submission. Latitude/longitude are cleared on input change until a GIS-validated suggestion is selected.
+- The ArcGIS address search component supports real-time input and validation, and notifies the parent form of every input change.
+- The activity info endpoint and frontend always display address, latitude, and longitude, showing "null" if any are missing.
 
 ## Contributing
 
