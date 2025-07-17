@@ -1,3 +1,16 @@
+// -----------------------------------------------------------------------------
+// activities.js - Database queries for activity CRUD, swiping, and filtering
+// -----------------------------------------------------------------------------
+// Contains all SQL/database logic for:
+//   - Fetching activities (with location/radius filtering)
+//   - Creating, editing, deleting activities
+//   - Swiping (like/dislike), leaving activities
+//   - Activity image management
+//   - Uses ArcGIS-validated address, latitude, longitude for location
+//
+// Exports: Query functions for use in Express routes
+// -----------------------------------------------------------------------------
+
 const pool = require("../db.ts");
 let chalk;
 (async () => {

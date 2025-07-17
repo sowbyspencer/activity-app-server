@@ -1,3 +1,15 @@
+// -----------------------------------------------------------------------------
+// users.js - Database queries for user profile, authentication, and management
+// -----------------------------------------------------------------------------
+// Contains all SQL/database logic for:
+//   - Fetching and updating user profiles
+//   - Password management
+//   - User image management
+//   - User deletion and related chat cleanup
+//
+// Exports: Query functions for use in Express routes
+// -----------------------------------------------------------------------------
+
 const pool = require("../db.ts");
 let chalk;
 (async () => {

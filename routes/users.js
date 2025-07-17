@@ -1,3 +1,15 @@
+// -----------------------------------------------------------------------------
+// users.js - Express routes for user profile, authentication, and image upload
+// -----------------------------------------------------------------------------
+// Handles all API endpoints related to users, including:
+//   - Fetching and updating user profiles
+//   - User image upload
+//   - Password management
+//   - User deletion and related chat cleanup
+//
+// Exports: Express router
+// -----------------------------------------------------------------------------
+
 const express = require("express");
 const router = express.Router();
 let chalk;

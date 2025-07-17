@@ -1,3 +1,16 @@
+// -----------------------------------------------------------------------------
+// activities.js - Express routes for activity CRUD, swiping, and image upload
+// -----------------------------------------------------------------------------
+// Handles all API endpoints related to activities, including:
+//   - Fetching activities (with location filtering)
+//   - Creating, editing, deleting activities
+//   - Swiping (like/dislike), leaving activities
+//   - Activity image upload (via multer)
+//   - Uses ArcGIS-validated address, latitude, longitude for location
+//
+// Exports: Express router
+// -----------------------------------------------------------------------------
+
 const express = require("express");
 const router = express.Router();
 let chalk;

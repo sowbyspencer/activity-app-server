@@ -1,3 +1,13 @@
+// -----------------------------------------------------------------------------
+// chat.js - Express routes for chat messaging
+// -----------------------------------------------------------------------------
+// Handles API endpoints for:
+//   - Fetching chat messages
+//   - Creating chats and sending messages
+//
+// Exports: Express router
+// -----------------------------------------------------------------------------
+
 const express = require("express");
 const router = express.Router();
 let chalk;
@@ -6,23 +16,26 @@ let chalk;
 })();
 const { getChatMessages, getOrCreateChat, sendMessageToChat } = require("../queries/chat");
 
-// ✅ Get all messages for a chat
-// Test URL: http://10.244.131.46:5000/chat/:chat_id (replace :chat_id with the chat ID)
-// http://10.244.131.46:5000/chat/1
-// Add detailed logging and responses for errors in chat routes
+// Route: GET /chat/:chat_id
+// Fetches all messages for a given chat (by chat_id)
+// Responds with 404 if no messages, 200 with messages otherwise
 router.get("/:chat_id", async (req, res) => {
   const { chat_id } = req.params;
   console.log(chalk.white("[CHAT] Fetching messages for chat_id:"), chat_id);
 
   try {
+    // Query DB for all messages in this chat
     const messages = await getChatMessages(chat_id);
     if (messages.error) {
+      // No messages found for this chat
       console.warn(chalk.red("[CHAT] No messages found for chat_id:"), chat_id);
       return res.status(404).json({ error: "No messages found for this chat." });
     }
+    // Success: return messages
     console.log(chalk.green("[CHAT]  Fetched messages for chat_id:"), chat_id);
     res.json(messages);
   } catch (err) {
+    // Handle DB or server errors
     console.error(chalk.red("[CHAT] Error fetching messages for chat_id:"), err.message);
     res.status(500).json({ error: "Failed to fetch messages. Please try again later." });
   }
@@ -74,4 +87,5 @@ router.post("/:chat_id", async (req, res) => {
   }
 });
 
+// Export the router for use in the main server
 module.exports = router;

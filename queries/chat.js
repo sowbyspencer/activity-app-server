@@ -1,12 +1,28 @@
+// -----------------------------------------------------------------------------
+// chat.js - Database queries for chat messaging
+// -----------------------------------------------------------------------------
+// Contains SQL/database logic for:
+//   - Fetching chat messages
+//   - Creating chats and sending messages
+//
+// Exports: Query functions for use in Express routes
+// -----------------------------------------------------------------------------
+
 const pool = require("../db.ts");
 let chalk;
 (async () => {
   chalk = (await import("chalk")).default;
 })();
 
-// ✅ Get all messages for a chat
+/**
+ * Fetch all messages for a given chat.
+ *
+ * @param {number|string} chat_id - The chat's ID
+ * @returns {Promise<Array|object>} List of messages or error object
+ */
 const getChatMessages = async (chat_id) => {
   try {
+    // Query for all messages in the chat, including sender info
     const result = await pool.query(
       `
       SELECT 
@@ -26,6 +42,7 @@ const getChatMessages = async (chat_id) => {
 
     return result.rows;
   } catch (err) {
+    // Log and return DB error
     console.error(chalk.red("Error fetching chat messages:"), err.message);
     return { error: "Database error while fetching chat messages." };
   }
